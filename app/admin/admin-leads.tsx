@@ -2,6 +2,19 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 
+type SeoReport = {
+  status: 'completed' | 'failed';
+  generatedAt: string;
+  summary: string;
+  score: number;
+  checks: Array<{
+    item: string;
+    status: 'good' | 'warning' | 'bad';
+    finding: string;
+    recommendation: string;
+  }>;
+};
+
 type Lead = {
   submittedAt: string;
   status: string;
@@ -14,6 +27,13 @@ type Lead = {
   email: string;
   messenger: string;
   note: string;
+  report?: SeoReport;
+};
+
+const statusLabel = {
+  good: '良好',
+  warning: '可优化',
+  bad: '高优先级'
 };
 
 export default function AdminLeads() {
@@ -63,7 +83,8 @@ export default function AdminLeads() {
         lead.contactName,
         lead.email,
         lead.messenger,
-        lead.note
+        lead.note,
+        lead.report?.summary || ''
       ].some((value) => value.toLowerCase().includes(keyword));
     });
   }, [leads, query]);
@@ -74,7 +95,7 @@ export default function AdminLeads() {
         <div>
           <p className="eyebrow">Moyag Admin</p>
           <h1>SEO 检测线索后台</h1>
-          <p>查看客户提交的官网 SEO 检测需求。数据来自服务器本地 leads.jsonl。</p>
+          <p>查看客户提交的官网 SEO 检测需求。新线索会自动附带一份初步诊断草稿。</p>
         </div>
         <a className="secondaryBtn" href="/">返回官网</a>
       </section>
@@ -102,7 +123,7 @@ export default function AdminLeads() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索公司、官网、产品、市场、联系人..."
+              placeholder="搜索公司、官网、产品、市场、联系人、诊断摘要..."
             />
             <button className="secondaryBtn" onClick={() => loadLeads()} disabled={isLoading}>刷新</button>
           </div>
@@ -120,7 +141,7 @@ export default function AdminLeads() {
                       <p className="leadTime">{new Date(lead.submittedAt).toLocaleString('zh-CN')}</p>
                       <h2>{lead.company}</h2>
                     </div>
-                    <span>{lead.status || '新提交'}</span>
+                    <span>{lead.report ? `SEO ${lead.report.score}/100` : (lead.status || '新提交')}</span>
                   </div>
                   <div className="leadGrid">
                     <div><b>官网</b><a href={lead.website} target="_blank" rel="noreferrer">{lead.website}</a></div>
@@ -132,6 +153,30 @@ export default function AdminLeads() {
                     <div><b>WhatsApp / 微信</b><p>{lead.messenger || '未填写'}</p></div>
                     <div><b>补充说明</b><p>{lead.note || '未填写'}</p></div>
                   </div>
+
+                  {lead.report && (
+                    <section className="reportBox">
+                      <div className="reportHead">
+                        <div>
+                          <b>SEO 初步诊断草稿</b>
+                          <p>{lead.report.summary}</p>
+                        </div>
+                        <strong>{lead.report.score}/100</strong>
+                      </div>
+                      <div className="reportChecks">
+                        {lead.report.checks.map((check, checkIndex) => (
+                          <div className={`reportCheck ${check.status}`} key={`${check.item}-${checkIndex}`}>
+                            <div className="reportCheckTop">
+                              <b>{check.item}</b>
+                              <span>{statusLabel[check.status]}</span>
+                            </div>
+                            <p><strong>发现：</strong>{check.finding}</p>
+                            <p><strong>建议：</strong>{check.recommendation}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 </article>
               ))
             )}
