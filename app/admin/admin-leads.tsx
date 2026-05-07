@@ -13,6 +13,23 @@ type SeoReport = {
     finding?: string;
     recommendation?: string;
   }>;
+  page?: {
+    finalUrl?: string;
+    title?: string;
+    titleLength?: number;
+    description?: string;
+    descriptionLength?: number;
+    h1?: string[];
+    h1Count?: number;
+    canonical?: string;
+    robots?: string;
+    viewport?: string;
+    imageCount?: number;
+    imagesWithoutAlt?: number;
+    internalLinks?: number;
+    externalLinks?: number;
+    hasContactSignal?: boolean;
+  };
 };
 
 type FollowupPackage = {
@@ -51,6 +68,7 @@ const statusLabel: Record<string, string> = {
 function text(value: unknown, fallback = '未填写') {
   if (typeof value === 'string' && value.trim()) return value.trim();
   if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return value ? '是' : '否';
   return fallback;
 }
 
@@ -70,6 +88,14 @@ function copyText(value: string) {
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
     navigator.clipboard.writeText(value).catch(() => undefined);
   }
+}
+
+function reportLevel(score: unknown) {
+  const value = Number(score || 0);
+  if (value >= 80) return '基础较好';
+  if (value >= 60) return '有增长空间';
+  if (value > 0) return '优先修复';
+  return '需人工复核';
 }
 
 export default function AdminLeads() {
@@ -121,6 +147,9 @@ export default function AdminLeads() {
         lead.messenger,
         lead.note,
         lead.report?.summary,
+        lead.report?.page?.title,
+        lead.report?.page?.description,
+        lead.report?.page?.canonical,
         lead.followup?.priority,
         lead.followup?.angle,
         lead.followup?.nextAction,
@@ -137,7 +166,7 @@ export default function AdminLeads() {
         <div>
           <p className="eyebrow">Moyag Admin</p>
           <h1>SEO 检测线索后台</h1>
-          <p>查看客户提交的官网 SEO 检测需求。新线索会自动附带初步诊断草稿和销售跟进包。</p>
+          <p>查看客户提交的官网 SEO 检测需求。新线索会自动附带诊断报告、页面数据和销售跟进包。</p>
         </div>
         <a className="secondaryBtn" href="/">返回官网</a>
       </section>
@@ -165,7 +194,7 @@ export default function AdminLeads() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索公司、官网、产品、市场、联系人、诊断摘要、跟进话术..."
+              placeholder="搜索公司、官网、产品、市场、联系人、诊断摘要、页面标题、跟进话术..."
             />
             <button className="secondaryBtn" onClick={() => loadLeads()} disabled={isLoading}>刷新</button>
           </div>
@@ -178,10 +207,12 @@ export default function AdminLeads() {
             ) : (
               filteredLeads.map((lead, index) => {
                 const report = lead.report;
+                const page = report?.page;
                 const checks = Array.isArray(report?.checks) ? report.checks : [];
                 const followup = lead.followup;
                 const website = safeUrl(lead.website);
                 const email = text(lead.email, '');
+                const score = Number(report?.score || 0);
 
                 return (
                   <article className="leadCard" key={`${text(lead.submittedAt, 'time')}-${email}-${index}`}>
@@ -207,11 +238,32 @@ export default function AdminLeads() {
                       <section className="reportBox">
                         <div className="reportHead">
                           <div>
-                            <b>SEO 初步诊断草稿</b>
+                            <b>SEO 诊断报告</b>
                             <p>{text(report.summary, '该线索暂无诊断摘要。')}</p>
                           </div>
                           <strong>{text(report.score, '0')}/100</strong>
                         </div>
+
+                        <div className="reportMetrics">
+                          <div><b>报告评级</b><p>{reportLevel(score)}</p></div>
+                          <div><b>生成时间</b><p>{safeDate(report.generatedAt)}</p></div>
+                          <div><b>最终抓取 URL</b><p>{text(page?.finalUrl)}</p></div>
+                          <div><b>Title 长度</b><p>{text(page?.titleLength)} 字符</p></div>
+                          <div><b>Description 长度</b><p>{text(page?.descriptionLength)} 字符</p></div>
+                          <div><b>H1 数量</b><p>{text(page?.h1Count)}</p></div>
+                          <div><b>图片 / 缺 Alt</b><p>{text(page?.imageCount, '0')} / {text(page?.imagesWithoutAlt, '0')}</p></div>
+                          <div><b>内链 / 外链</b><p>{text(page?.internalLinks, '0')} / {text(page?.externalLinks, '0')}</p></div>
+                          <div><b>询盘信号</b><p>{text(page?.hasContactSignal)}</p></div>
+                        </div>
+
+                        <div className="pageSnapshot">
+                          <div><b>页面 Title</b><p>{text(page?.title)}</p></div>
+                          <div><b>Meta Description</b><p>{text(page?.description)}</p></div>
+                          <div><b>H1 列表</b><p>{Array.isArray(page?.h1) && page.h1.length ? page.h1.join(' / ') : '未检测到'}</p></div>
+                          <div><b>Canonical</b><p>{text(page?.canonical)}</p></div>
+                          <div><b>Robots</b><p>{text(page?.robots, '未检测到 noindex')}</p></div>
+                        </div>
+
                         <div className="reportChecks">
                           {checks.length === 0 ? (
                             <div className="emptyState">暂无诊断检查项。</div>
