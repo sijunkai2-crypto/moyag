@@ -3,38 +3,56 @@
 import { FormEvent, useMemo, useState } from 'react';
 
 type SeoReport = {
-  status: 'completed' | 'failed';
-  generatedAt: string;
-  summary: string;
-  score: number;
-  checks: Array<{
-    item: string;
-    status: 'good' | 'warning' | 'bad';
-    finding: string;
-    recommendation: string;
+  status?: 'completed' | 'failed' | string;
+  generatedAt?: string;
+  summary?: string;
+  score?: number;
+  checks?: Array<{
+    item?: string;
+    status?: 'good' | 'warning' | 'bad' | string;
+    finding?: string;
+    recommendation?: string;
   }>;
 };
 
 type Lead = {
-  submittedAt: string;
-  status: string;
-  company: string;
-  website: string;
-  product: string;
-  market: string;
-  problem: string;
-  contactName: string;
-  email: string;
-  messenger: string;
-  note: string;
+  submittedAt?: string;
+  status?: string;
+  company?: string;
+  website?: string;
+  product?: string;
+  market?: string;
+  problem?: string;
+  contactName?: string;
+  email?: string;
+  messenger?: string;
+  note?: string;
   report?: SeoReport;
 };
 
-const statusLabel = {
+const statusLabel: Record<string, string> = {
   good: '良好',
   warning: '可优化',
   bad: '高优先级'
 };
+
+function text(value: unknown, fallback = '未填写') {
+  if (typeof value === 'string' && value.trim()) return value.trim();
+  if (typeof value === 'number') return String(value);
+  return fallback;
+}
+
+function safeDate(value: unknown) {
+  if (typeof value !== 'string' || !value) return '未知时间';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString('zh-CN');
+}
+
+function safeUrl(value: unknown) {
+  const url = text(value, '');
+  return url || '#';
+}
 
 export default function AdminLeads() {
   const [password, setPassword] = useState('');
@@ -57,9 +75,9 @@ export default function AdminLeads() {
 
       if (!response.ok) throw new Error(data.message || '读取失败。');
 
-      setLeads(data.leads || []);
+      setLeads(Array.isArray(data.leads) ? data.leads : []);
       setIsAuthed(true);
-      setMessage(`已读取 ${data.leads?.length || 0} 条线索。`);
+      setMessage(`已读取 ${Array.isArray(data.leads) ? data.leads.length : 0} 条线索。`);
     } catch (error) {
       setIsAuthed(false);
       setLeads([]);
@@ -84,8 +102,8 @@ export default function AdminLeads() {
         lead.email,
         lead.messenger,
         lead.note,
-        lead.report?.summary || ''
-      ].some((value) => value.toLowerCase().includes(keyword));
+        lead.report?.summary
+      ].some((value) => text(value, '').toLowerCase().includes(keyword));
     });
   }, [leads, query]);
 
@@ -134,51 +152,65 @@ export default function AdminLeads() {
             {filteredLeads.length === 0 ? (
               <div className="emptyState">暂无匹配线索。</div>
             ) : (
-              filteredLeads.map((lead, index) => (
-                <article className="leadCard" key={`${lead.submittedAt}-${lead.email}-${index}`}>
-                  <div className="leadTop">
-                    <div>
-                      <p className="leadTime">{new Date(lead.submittedAt).toLocaleString('zh-CN')}</p>
-                      <h2>{lead.company}</h2>
-                    </div>
-                    <span>{lead.report ? `SEO ${lead.report.score}/100` : (lead.status || '新提交')}</span>
-                  </div>
-                  <div className="leadGrid">
-                    <div><b>官网</b><a href={lead.website} target="_blank" rel="noreferrer">{lead.website}</a></div>
-                    <div><b>产品/服务</b><p>{lead.product}</p></div>
-                    <div><b>目标市场</b><p>{lead.market}</p></div>
-                    <div><b>当前问题</b><p>{lead.problem}</p></div>
-                    <div><b>联系人</b><p>{lead.contactName}</p></div>
-                    <div><b>邮箱</b><a href={`mailto:${lead.email}`}>{lead.email}</a></div>
-                    <div><b>WhatsApp / 微信</b><p>{lead.messenger || '未填写'}</p></div>
-                    <div><b>补充说明</b><p>{lead.note || '未填写'}</p></div>
-                  </div>
+              filteredLeads.map((lead, index) => {
+                const report = lead.report;
+                const checks = Array.isArray(report?.checks) ? report.checks : [];
+                const website = safeUrl(lead.website);
+                const email = text(lead.email, '');
 
-                  {lead.report && (
-                    <section className="reportBox">
-                      <div className="reportHead">
-                        <div>
-                          <b>SEO 初步诊断草稿</b>
-                          <p>{lead.report.summary}</p>
-                        </div>
-                        <strong>{lead.report.score}/100</strong>
+                return (
+                  <article className="leadCard" key={`${text(lead.submittedAt, 'time')}-${email}-${index}`}>
+                    <div className="leadTop">
+                      <div>
+                        <p className="leadTime">{safeDate(lead.submittedAt)}</p>
+                        <h2>{text(lead.company, '未填写公司名称')}</h2>
                       </div>
-                      <div className="reportChecks">
-                        {lead.report.checks.map((check, checkIndex) => (
-                          <div className={`reportCheck ${check.status}`} key={`${check.item}-${checkIndex}`}>
-                            <div className="reportCheckTop">
-                              <b>{check.item}</b>
-                              <span>{statusLabel[check.status]}</span>
-                            </div>
-                            <p><strong>发现：</strong>{check.finding}</p>
-                            <p><strong>建议：</strong>{check.recommendation}</p>
+                      <span>{report ? `SEO ${text(report.score, '0')}/100` : text(lead.status, '新提交')}</span>
+                    </div>
+                    <div className="leadGrid">
+                      <div><b>官网</b>{website === '#' ? <p>未填写</p> : <a href={website} target="_blank" rel="noreferrer">{website}</a>}</div>
+                      <div><b>产品/服务</b><p>{text(lead.product)}</p></div>
+                      <div><b>目标市场</b><p>{text(lead.market)}</p></div>
+                      <div><b>当前问题</b><p>{text(lead.problem)}</p></div>
+                      <div><b>联系人</b><p>{text(lead.contactName)}</p></div>
+                      <div><b>邮箱</b>{email ? <a href={`mailto:${email}`}>{email}</a> : <p>未填写</p>}</div>
+                      <div><b>WhatsApp / 微信</b><p>{text(lead.messenger)}</p></div>
+                      <div><b>补充说明</b><p>{text(lead.note)}</p></div>
+                    </div>
+
+                    {report && (
+                      <section className="reportBox">
+                        <div className="reportHead">
+                          <div>
+                            <b>SEO 初步诊断草稿</b>
+                            <p>{text(report.summary, '该线索暂无诊断摘要。')}</p>
                           </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-                </article>
-              ))
+                          <strong>{text(report.score, '0')}/100</strong>
+                        </div>
+                        <div className="reportChecks">
+                          {checks.length === 0 ? (
+                            <div className="emptyState">暂无诊断检查项。</div>
+                          ) : (
+                            checks.map((check, checkIndex) => {
+                              const checkStatus = text(check.status, 'warning');
+                              return (
+                                <div className={`reportCheck ${checkStatus}`} key={`${text(check.item, 'item')}-${checkIndex}`}>
+                                  <div className="reportCheckTop">
+                                    <b>{text(check.item, '未命名检查项')}</b>
+                                    <span>{statusLabel[checkStatus] || checkStatus}</span>
+                                  </div>
+                                  <p><strong>发现：</strong>{text(check.finding)}</p>
+                                  <p><strong>建议：</strong>{text(check.recommendation)}</p>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </section>
+                    )}
+                  </article>
+                );
+              })
             )}
           </div>
         )}
