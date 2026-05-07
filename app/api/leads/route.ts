@@ -45,12 +45,24 @@ type SeoReport = {
   };
 };
 
+type FollowupPackage = {
+  priority: '高' | '中' | '低';
+  angle: string;
+  nextAction: string;
+  offer: string;
+  emailSubject: string;
+  emailBody: string;
+  whatsappMessage: string;
+  callScript: string;
+};
+
 type Lead = Required<Pick<LeadPayload, 'company' | 'website' | 'product' | 'market' | 'problem' | 'contactName' | 'email'>> & {
   submittedAt: string;
   status: string;
   messenger: string;
   note: string;
   report: SeoReport;
+  followup: FollowupPackage;
 };
 
 const requiredFields: Array<keyof LeadPayload> = [
@@ -169,6 +181,58 @@ function countLinks(html: string, baseUrl: string) {
 
 function makeCheck(item: string, status: 'good' | 'warning' | 'bad', finding: string, recommendation: string) {
   return { item, status, finding, recommendation };
+}
+
+function pickTopProblems(report: SeoReport) {
+  return report.checks
+    .filter((check) => check.status !== 'good')
+    .slice(0, 3)
+    .map((check) => `${check.item}：${check.recommendation}`);
+}
+
+function generateFollowupPackage(lead: Omit<Lead, 'followup'>): FollowupPackage {
+  const topProblems = pickTopProblems(lead.report);
+  const mainProblem = topProblems[0] || '官网 SEO 基础结构仍有继续放大询盘的空间。';
+  const priority: FollowupPackage['priority'] = lead.report.status === 'failed' || lead.report.score < 55 ? '高' : lead.report.score < 78 ? '中' : '低';
+  const angle = `客户主营 ${lead.product}，目标市场是 ${lead.market}。沟通重点不要只讲“排名”，要讲 Google 搜索流量如何变成可追踪询盘，先用 ${mainProblem} 切入。`;
+  const offer = '提供 1 次免费 15 分钟官网 SEO 诊断复盘，交付一份首页问题清单、关键词方向和询盘入口优化建议。';
+  const nextAction = priority === '高'
+    ? '24 小时内邮件 + WhatsApp/微信同步跟进，优先约诊断电话。'
+    : priority === '中'
+      ? '48 小时内发送诊断摘要，推动客户确认目标市场和核心产品词。'
+      : '发送礼貌型优化建议，建立后续内容 SEO 咨询机会。';
+  const subject = `${lead.company} 官网 SEO 初步诊断：发现 ${topProblems.length || 1} 个可提升询盘的问题`;
+  const bullets = topProblems.length
+    ? topProblems.map((item) => `- ${item}`).join('\n')
+    : '- 当前官网已有基础 SEO 信号，但还可以继续强化产品关键词、询盘入口和内容结构。';
+
+  const emailBody = `Hi ${lead.contactName},
+
+我们已经完成了 ${lead.company} 官网的初步 SEO 检测。结合你提交的目标市场「${lead.market}」和主营产品/服务「${lead.product}」，目前最值得优先处理的是：
+
+${bullets}
+
+这些问题会影响 Google 对页面主题的理解，也会影响潜在客户进入官网后的询盘动作。
+
+我们可以先为你做一次 15 分钟免费复盘，把首页 SEO、关键词方向和询盘入口拆开讲清楚。你方便这两天约一个时间吗？
+
+Best regards,
+Moyag AI SEO Team`;
+
+  const whatsappMessage = `${lead.contactName} 你好，我们刚看完 ${lead.company} 的官网 SEO 初步检测。主要发现：${topProblems[0] || '官网还有提升 Google 询盘转化的空间'}。可以免费帮你做一次 15 分钟复盘，把 Google 关键词、页面结构和询盘入口讲清楚。你这两天方便吗？`;
+
+  const callScript = `开场：您好，我是 Moyag，刚收到您提交的官网 SEO 检测需求。\n确认：您现在更关注 ${lead.market} 市场的自然流量，还是更关注官网询盘转化？\n切入：我们初步看到的问题是「${mainProblem}」。这类问题通常会让 Google 不容易判断页面主题，也会让客户进站后不知道下一步怎么联系。\n邀约：我建议先用 15 分钟把首页、关键词和询盘入口过一遍，您看今天或明天哪个时间方便？`;
+
+  return {
+    priority,
+    angle,
+    nextAction,
+    offer,
+    emailSubject: subject,
+    emailBody,
+    whatsappMessage,
+    callScript
+  };
 }
 
 async function generateSeoReport(website: string): Promise<SeoReport> {
@@ -373,7 +437,7 @@ function buildLeadEmailHtml(lead: Lead) {
   return `
     <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.7;color:#172033;max-width:860px;">
       <h2 style="margin:0 0 16px;">Moyag SEO 检测新线索</h2>
-      <p style="margin:0 0 18px;color:#596579;">客户刚刚提交了官网 SEO 检测需求。系统已生成初步诊断草稿，请人工复核后跟进。</p>
+      <p style="margin:0 0 18px;color:#596579;">客户刚刚提交了官网 SEO 检测需求。系统已生成初步诊断草稿和销售跟进建议，请人工复核后跟进。</p>
       <table style="width:100%;border-collapse:collapse;border:1px solid #e6e9ef;margin-bottom:22px;">
         ${rows.map(([label, value]) => `
           <tr>
@@ -394,6 +458,15 @@ function buildLeadEmailHtml(lead: Lead) {
         </tr>
         ${reportRows}
       </table>
+
+      <h3 style="margin:22px 0 8px;">销售跟进包</h3>
+      <p><b>优先级：</b>${escapeHtml(lead.followup.priority)}</p>
+      <p><b>切入角度：</b>${escapeHtml(lead.followup.angle)}</p>
+      <p><b>下一步：</b>${escapeHtml(lead.followup.nextAction)}</p>
+      <p><b>邀约：</b>${escapeHtml(lead.followup.offer)}</p>
+      <p><b>邮件标题：</b>${escapeHtml(lead.followup.emailSubject)}</p>
+      <pre style="white-space:pre-wrap;background:#f7f9fc;border:1px solid #e6e9ef;border-radius:12px;padding:14px;">${escapeHtml(lead.followup.emailBody)}</pre>
+      <p><b>WhatsApp/微信：</b>${escapeHtml(lead.followup.whatsappMessage)}</p>
     </div>
   `;
 }
@@ -421,7 +494,17 @@ function buildLeadEmailText(lead: Lead) {
       `状态：${check.status}`,
       `发现：${check.finding}`,
       `建议：${check.recommendation}`
-    ])
+    ]),
+    '',
+    '销售跟进包',
+    `优先级：${lead.followup.priority}`,
+    `切入角度：${lead.followup.angle}`,
+    `下一步：${lead.followup.nextAction}`,
+    `邀约：${lead.followup.offer}`,
+    `邮件标题：${lead.followup.emailSubject}`,
+    lead.followup.emailBody,
+    `WhatsApp/微信：${lead.followup.whatsappMessage}`,
+    `电话脚本：${lead.followup.callScript}`
   ].join('\n');
 }
 
@@ -444,7 +527,7 @@ async function sendLeadNotification(lead: Lead) {
     from: config.from,
     to: config.to,
     replyTo: lead.email,
-    subject: `新 SEO 检测线索：${lead.company}｜初步得分 ${lead.report.score}/100`,
+    subject: `新 SEO 检测线索：${lead.company}｜初步得分 ${lead.report.score}/100｜跟进优先级 ${lead.followup.priority}`,
     text: buildLeadEmailText(lead),
     html: buildLeadEmailHtml(lead)
   });
@@ -470,7 +553,7 @@ export async function POST(request: Request) {
 
     const report = await generateSeoReport(String(body.website).trim());
 
-    const lead: Lead = {
+    const baseLead: Omit<Lead, 'followup'> = {
       submittedAt: new Date().toISOString(),
       status: '新提交',
       company: String(body.company).trim(),
@@ -483,6 +566,11 @@ export async function POST(request: Request) {
       messenger: body.messenger ? String(body.messenger).trim() : '',
       note: body.note ? String(body.note).trim() : '',
       report
+    };
+
+    const lead: Lead = {
+      ...baseLead,
+      followup: generateFollowupPackage(baseLead)
     };
 
     const dataDir = path.join(process.cwd(), 'data');
