@@ -2,6 +2,20 @@ import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+type SeoReport = {
+  status: 'completed' | 'failed';
+  generatedAt: string;
+  summary: string;
+  score: number;
+  checks: Array<{
+    item: string;
+    status: 'good' | 'warning' | 'bad';
+    finding: string;
+    recommendation: string;
+  }>;
+  page: Record<string, unknown>;
+};
+
 type Lead = {
   submittedAt: string;
   status: string;
@@ -14,6 +28,7 @@ type Lead = {
   email: string;
   messenger: string;
   note: string;
+  report?: SeoReport;
 };
 
 function isAuthorized(request: Request) {
