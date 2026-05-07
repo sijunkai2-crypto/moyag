@@ -15,6 +15,17 @@ type SeoReport = {
   }>;
 };
 
+type FollowupPackage = {
+  priority?: string;
+  angle?: string;
+  nextAction?: string;
+  offer?: string;
+  emailSubject?: string;
+  emailBody?: string;
+  whatsappMessage?: string;
+  callScript?: string;
+};
+
 type Lead = {
   submittedAt?: string;
   status?: string;
@@ -28,6 +39,7 @@ type Lead = {
   messenger?: string;
   note?: string;
   report?: SeoReport;
+  followup?: FollowupPackage;
 };
 
 const statusLabel: Record<string, string> = {
@@ -52,6 +64,12 @@ function safeDate(value: unknown) {
 function safeUrl(value: unknown) {
   const url = text(value, '');
   return url || '#';
+}
+
+function copyText(value: string) {
+  if (typeof navigator !== 'undefined' && navigator.clipboard) {
+    navigator.clipboard.writeText(value).catch(() => undefined);
+  }
 }
 
 export default function AdminLeads() {
@@ -102,7 +120,13 @@ export default function AdminLeads() {
         lead.email,
         lead.messenger,
         lead.note,
-        lead.report?.summary
+        lead.report?.summary,
+        lead.followup?.priority,
+        lead.followup?.angle,
+        lead.followup?.nextAction,
+        lead.followup?.emailSubject,
+        lead.followup?.emailBody,
+        lead.followup?.whatsappMessage
       ].some((value) => text(value, '').toLowerCase().includes(keyword));
     });
   }, [leads, query]);
@@ -113,7 +137,7 @@ export default function AdminLeads() {
         <div>
           <p className="eyebrow">Moyag Admin</p>
           <h1>SEO 检测线索后台</h1>
-          <p>查看客户提交的官网 SEO 检测需求。新线索会自动附带一份初步诊断草稿。</p>
+          <p>查看客户提交的官网 SEO 检测需求。新线索会自动附带初步诊断草稿和销售跟进包。</p>
         </div>
         <a className="secondaryBtn" href="/">返回官网</a>
       </section>
@@ -141,7 +165,7 @@ export default function AdminLeads() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="搜索公司、官网、产品、市场、联系人、诊断摘要..."
+              placeholder="搜索公司、官网、产品、市场、联系人、诊断摘要、跟进话术..."
             />
             <button className="secondaryBtn" onClick={() => loadLeads()} disabled={isLoading}>刷新</button>
           </div>
@@ -155,6 +179,7 @@ export default function AdminLeads() {
               filteredLeads.map((lead, index) => {
                 const report = lead.report;
                 const checks = Array.isArray(report?.checks) ? report.checks : [];
+                const followup = lead.followup;
                 const website = safeUrl(lead.website);
                 const email = text(lead.email, '');
 
@@ -165,7 +190,7 @@ export default function AdminLeads() {
                         <p className="leadTime">{safeDate(lead.submittedAt)}</p>
                         <h2>{text(lead.company, '未填写公司名称')}</h2>
                       </div>
-                      <span>{report ? `SEO ${text(report.score, '0')}/100` : text(lead.status, '新提交')}</span>
+                      <span>{followup?.priority ? `跟进 ${followup.priority}` : report ? `SEO ${text(report.score, '0')}/100` : text(lead.status, '新提交')}</span>
                     </div>
                     <div className="leadGrid">
                       <div><b>官网</b>{website === '#' ? <p>未填写</p> : <a href={website} target="_blank" rel="noreferrer">{website}</a>}</div>
@@ -205,6 +230,36 @@ export default function AdminLeads() {
                               );
                             })
                           )}
+                        </div>
+                      </section>
+                    )}
+
+                    {followup && (
+                      <section className="followupBox">
+                        <div className="followupHead">
+                          <div>
+                            <b>销售跟进包</b>
+                            <p>系统按客户产品、市场和 SEO 问题生成，可直接复制后人工微调。</p>
+                          </div>
+                          <span>优先级：{text(followup.priority, '中')}</span>
+                        </div>
+                        <div className="followupGrid">
+                          <div><b>切入角度</b><p>{text(followup.angle)}</p></div>
+                          <div><b>下一步动作</b><p>{text(followup.nextAction)}</p></div>
+                          <div><b>邀约方案</b><p>{text(followup.offer)}</p></div>
+                          <div><b>邮件标题</b><p>{text(followup.emailSubject)}</p></div>
+                        </div>
+                        <div className="copyBlock">
+                          <div className="copyBlockTop"><b>邮件正文</b><button onClick={() => copyText(text(followup.emailBody, ''))}>复制</button></div>
+                          <pre>{text(followup.emailBody)}</pre>
+                        </div>
+                        <div className="copyBlock">
+                          <div className="copyBlockTop"><b>WhatsApp / 微信话术</b><button onClick={() => copyText(text(followup.whatsappMessage, ''))}>复制</button></div>
+                          <pre>{text(followup.whatsappMessage)}</pre>
+                        </div>
+                        <div className="copyBlock">
+                          <div className="copyBlockTop"><b>电话开场脚本</b><button onClick={() => copyText(text(followup.callScript, ''))}>复制</button></div>
+                          <pre>{text(followup.callScript)}</pre>
                         </div>
                       </section>
                     )}
