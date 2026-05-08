@@ -1,75 +1,69 @@
-import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
+import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs/promises';
 import path from 'path';
 
-type SeoReport = {
-  status: 'completed' | 'failed';
-  generatedAt: string;
-  summary: string;
-  score: number;
-  checks: Array<{
-    item: string;
-    status: 'good' | 'warning' | 'bad';
-    finding: string;
-    recommendation: string;
-  }>;
-  page: Record<string, unknown>;
-};
+export const dynamic = 'force-dynamic';
 
-type Lead = {
-  submittedAt: string;
-  status: string;
-  company: string;
-  website: string;
-  product: string;
-  market: string;
-  problem: string;
-  contactName: string;
-  email: string;
-  messenger: string;
-  note: string;
-  report?: SeoReport;
-};
-
-function isAuthorized(request: Request) {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const providedPassword = request.headers.get('x-admin-password');
-
-  if (!adminPassword) return false;
-  return providedPassword === adminPassword;
-}
-
-function parseLeadLine(line: string): Lead | null {
+function safeParseJsonLine(line: string) {
   try {
-    return JSON.parse(line) as Lead;
+    return JSON.parse(line);
   } catch {
     return null;
   }
 }
 
-export async function GET(request: Request) {
-  if (!isAuthorized(request)) {
-    return NextResponse.json({ message: '密码错误或后台密码未配置。' }, { status: 401 });
-  }
-
+async function readJsonl(filePath: string) {
   try {
-    const filePath = path.join(process.cwd(), 'data', 'leads.jsonl');
-    const content = await fs.readFile(filePath, 'utf8').catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') return '';
-      throw error;
-    });
-
-    const leads = content
+    const raw = await fs.readFile(filePath, 'utf8');
+    return raw
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean)
-      .map(parseLeadLine)
-      .filter((lead): lead is Lead => Boolean(lead))
-      .reverse();
-
-    return NextResponse.json({ leads });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: '读取线索失败。' }, { status: 500 });
+      .map(safeParseJsonLine)
+      .filter(Boolean);
+  } catch {
+    return [];
   }
+}
+
+async function readJsonArray(filePath: string) {
+  try {
+    const raw = await fs.readFile(filePath, 'utf8');
+    if (!raw.trim()) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function GET(request: NextRequest) {
+  const password = request.nextUrl.searchParams.get('password') || '';
+  const adminPassword = process.env.ADMIN_PASSWORD || '';
+
+  if (!adminPassword || password !== adminPassword) {
+    return NextResponse.json(
+      { message: '密码错误或后台密码未配置。' },
+      { status: 401 }
+    );
+  }
+
+  const cwd = process.cwd();
+
+  const jsonlPath = path.join(cwd, 'data', 'leads.jsonl');
+  const legacyJsonPath = path.join(cwd, 'leads.json');
+
+  const jsonlLeads = await readJsonl(jsonlPath);
+  const legacyLeads = await readJsonArray(legacyJsonPath);
+
+  const leads = [...jsonlLeads, ...legacyLeads].sort((a: any, b: any) => {
+    const at = new Date(a?.submittedAt || 0).getTime();
+    const bt = new Date(b?.submittedAt || 0).getTime();
+    return bt - at;
+  });
+
+  return NextResponse.json({
+    count: leads.length,
+    leads,
+  });
 }
