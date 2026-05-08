@@ -30,6 +30,23 @@ type Lead = {
     generatedAt?: string;
     summary?: string;
     score?: number;
+    riskLevel?: string;
+    issueCount?: number;
+    highPriorityCount?: number;
+    estimatedFixCycle?: string;
+    executiveSummary?: string;
+    sections?: Array<{
+      title?: string;
+      summary?: string;
+      issues?: Array<{
+        title?: string;
+        severity?: string;
+        evidence?: string;
+        impact?: string;
+        recommendation?: string;
+        expectedBenefit?: string;
+      }>;
+    }>;
     checks?: Array<{
       item?: string;
       status?: string;
@@ -95,6 +112,12 @@ async function readLeads() {
 function renderPageValue(value: unknown) {
   if (Array.isArray(value)) return value.length ? value.join(' / ') : '未检测到';
   return text(value, '未检测到');
+}
+
+function severityLabel(severity: string) {
+  if (severity === 'high') return '高';
+  if (severity === 'medium') return '中';
+  return '低';
 }
 
 function AdminLogin({ message }: { message?: string }) {
@@ -182,6 +205,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             <strong>{text(report.score, '0')}/100</strong>
                           </div>
 
+                          <div className="kpiGrid">
+                            <div className="kpiCard"><b>综合评分</b><p>{text(report.score, '0')}/100</p></div>
+                            <div className="kpiCard"><b>风险等级</b><p>{text(report.riskLevel, '未分级')}</p></div>
+                            <div className="kpiCard"><b>问题数量</b><p>{text(report.issueCount, String(checks.filter((c) => c.status !== 'good').length))}</p></div>
+                            <div className="kpiCard"><b>高优先级问题</b><p>{text(report.highPriorityCount, String(checks.filter((c) => c.status === 'bad').length))}</p></div>
+                            <div className="kpiCard"><b>预计修复周期</b><p>{text(report.estimatedFixCycle, '待评估')}</p></div>
+                          </div>
+
                           <div className="reportMetrics">
                             <div><b>生成时间</b><p>{parseDate(report.generatedAt)}</p></div>
                             <div><b>最终抓取 URL</b><p>{renderPageValue(page.finalUrl)}</p></div>
@@ -189,9 +220,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             <div><b>Title 长度</b><p>{renderPageValue(page.titleLength)} 字符</p></div>
                             <div><b>Description 长度</b><p>{renderPageValue(page.descriptionLength)} 字符</p></div>
                             <div><b>H1 数量</b><p>{renderPageValue(page.h1Count)}</p></div>
+                            <div><b>H2 / H3 数量</b><p>{renderPageValue(page.h2Count)} / {renderPageValue(page.h3Count)}</p></div>
                             <div><b>图片 / 缺 Alt</b><p>{renderPageValue(page.imageCount)} / {renderPageValue(page.imagesWithoutAlt)}</p></div>
                             <div><b>内链 / 外链</b><p>{renderPageValue(page.internalLinks)} / {renderPageValue(page.externalLinks)}</p></div>
                             <div><b>询盘信号</b><p>{renderPageValue(page.hasContactSignal)}</p></div>
+                            <div><b>正文词数</b><p>{renderPageValue(page.bodyWordCount)}</p></div>
                           </div>
 
                           <div className="pageSnapshot">
@@ -199,6 +232,37 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                             <div><b>H1 列表</b><p>{renderPageValue(page.h1)}</p></div>
                             <div><b>Canonical</b><p>{renderPageValue(page.canonical)}</p></div>
                             <div><b>Robots</b><p>{renderPageValue(page.robots)}</p></div>
+                          </div>
+
+                          <div className="proSectionGrid">
+                            {(Array.isArray(report.sections) && report.sections.length
+                              ? report.sections
+                              : [
+                                  { title: '执行摘要', summary: report.executiveSummary || report.summary, issues: [] },
+                                  { title: '技术 SEO', summary: '兼容旧版报告，暂无分区数据。', issues: [] },
+                                  { title: '页面结构', summary: '兼容旧版报告，暂无分区数据。', issues: [] },
+                                  { title: '内容与关键词', summary: '兼容旧版报告，暂无分区数据。', issues: [] },
+                                  { title: '转化线索', summary: '兼容旧版报告，暂无分区数据。', issues: [] },
+                                  { title: '竞争与增长机会', summary: '兼容旧版报告，暂无分区数据。', issues: [] },
+                                  { title: '优先级行动计划', summary: '兼容旧版报告，暂无分区数据。', issues: [] }
+                                ]
+                            ).map((section, sectionIndex) => (
+                              <div className="proSectionCard" key={`${text(section.title, 'section')}-${sectionIndex}`}>
+                                <h3>{text(section.title, '未命名分区')}</h3>
+                                <p>{text(section.summary, '暂无摘要')}</p>
+                                <div className="issueList">
+                                  {(Array.isArray(section.issues) ? section.issues : []).map((issue, issueIndex) => (
+                                    <div className={`issueCard severity-${text(issue.severity, 'low')}`} key={`${text(issue.title, 'issue')}-${issueIndex}`}>
+                                      <div className="issueTop"><b>{text(issue.title, '未命名问题')}</b><span>{severityLabel(text(issue.severity, 'low'))}</span></div>
+                                      <p><strong>发现依据：</strong>{text(issue.evidence, '暂无')}</p>
+                                      <p><strong>影响说明：</strong>{text(issue.impact, '暂无')}</p>
+                                      <p><strong>修复建议：</strong>{text(issue.recommendation, '暂无')}</p>
+                                      <p><strong>预期收益：</strong>{text(issue.expectedBenefit, '暂无')}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
                           </div>
 
                           <div className="reportChecks">
