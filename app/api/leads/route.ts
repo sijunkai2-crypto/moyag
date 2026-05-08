@@ -20,6 +20,23 @@ type SeoReport = {
   generatedAt: string;
   summary: string;
   score: number;
+  riskLevel?: '高风险' | '中风险' | '低风险';
+  issueCount?: number;
+  highPriorityCount?: number;
+  estimatedFixCycle?: string;
+  executiveSummary?: string;
+  sections?: Array<{
+    title: string;
+    summary: string;
+    issues: Array<{
+      title: string;
+      severity: 'high' | 'medium' | 'low';
+      evidence: string;
+      impact: string;
+      recommendation: string;
+      expectedBenefit: string;
+    }>;
+  }>;
   checks: Array<{
     item: string;
     status: 'good' | 'warning' | 'bad';
@@ -42,6 +59,9 @@ type SeoReport = {
     internalLinks?: number;
     externalLinks?: number;
     hasContactSignal?: boolean;
+    h2Count?: number;
+    h3Count?: number;
+    bodyWordCount?: number;
   };
 };
 
@@ -183,6 +203,11 @@ function makeCheck(item: string, status: 'good' | 'warning' | 'bad', finding: st
   return { item, status, finding, recommendation };
 }
 
+function keywordIncluded(text: string, words: string[]) {
+  const lower = text.toLowerCase();
+  return words.some((word) => word && lower.includes(word.toLowerCase()));
+}
+
 function pickTopProblems(report: SeoReport) {
   return report.checks
     .filter((check) => check.status !== 'good')
@@ -235,7 +260,7 @@ Moyag AI SEO Team`;
   };
 }
 
-async function generateSeoReport(website: string): Promise<SeoReport> {
+async function generateSeoReport(website: string, product = '', market = ''): Promise<SeoReport> {
   const generatedAt = new Date().toISOString();
 
   try {
@@ -257,12 +282,22 @@ async function generateSeoReport(website: string): Promise<SeoReport> {
     const canonical = getLinkHref(html, 'canonical');
     const robots = getMetaContent(html, 'robots');
     const viewport = getMetaContent(html, 'viewport');
+    const h2 = getAllTagContent(html, 'h2');
+    const h3 = getAllTagContent(html, 'h3');
     const imageTags = [...html.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
     const imageCount = imageTags.length;
     const imagesWithoutAlt = imageTags.filter((img) => !getAttribute(img, 'alt')).length;
     const { internalLinks, externalLinks } = countLinks(html, finalUrl);
     const visibleText = stripHtml(html).toLowerCase();
+    const wordCount = stripHtml(html).split(/\s+/).filter(Boolean).length;
+    const productWords = product.split(/[,\s/|]+/).map((word) => word.trim().toLowerCase()).filter(Boolean);
+    const marketWords = market.split(/[,\s/|]+/).map((word) => word.trim().toLowerCase()).filter(Boolean);
     const hasContactSignal = /contact|quote|inquiry|enquiry|whatsapp|email|request|rfq|咨询|联系/i.test(visibleText);
+    const hasFormSignal = /<form\b|type=["']submit["']|request a quote|get quote|contact us|询盘|提交/.test(html.toLowerCase());
+    const hasPhoneSignal = /tel:|\+?\d[\d\s\-()]{6,}/.test(html);
+    const hasEmailSignal = /mailto:|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i.test(html);
+    const b2bSignal = /manufacturer|factory|supplier|oem|odm|export|wholesale|bulk|certification|iso|manufacturing|supply chain|b2b/i.test(visibleText);
+    const languageSignal = /lang=["'](en|es|de|fr|ar|ja|ko|ru|pt|it|zh)/i.test(html);
 
     const checks: SeoReport['checks'] = [];
 
@@ -277,6 +312,46 @@ async function generateSeoReport(website: string): Promise<SeoReport> {
               : '建议将 Title 控制在 30-65 字符，并前置核心产品关键词。'
           )
         : makeCheck('Title 标题', 'bad', '未检测到页面 Title。', '需要为首页添加清晰的英文 Title，包含产品、用途和品牌。')
+    );
+    checks.push(
+      makeCheck(
+        '关键词覆盖（产品+市场）',
+        keywordIncluded(`${title} ${description} ${visibleText}`, [...productWords, ...marketWords]) ? 'good' : 'bad',
+        `产品词命中：${keywordIncluded(visibleText, productWords) ? '是' : '否'}；市场词命中：${keywordIncluded(visibleText, marketWords) ? '是' : '否'}`,
+        '在 Title/H1/首屏文案中明确写入产品词与目标市场词，提升相关搜索匹配度。'
+      )
+    );
+    checks.push(
+      makeCheck(
+        '标题层级结构',
+        h2.length >= 2 && h3.length >= 1 ? 'good' : 'warning',
+        `检测到 H2 ${h2.length} 个，H3 ${h3.length} 个。`,
+        '建议构建“产品优势-应用场景-认证交付-FAQ-询盘入口”的 H2/H3 结构。'
+      )
+    );
+    checks.push(
+      makeCheck(
+        '正文内容长度',
+        wordCount >= 300 ? 'good' : 'warning',
+        `页面可见正文约 ${wordCount} 词。`,
+        'B2B 首页建议不少于 300-600 词，覆盖能力、场景、认证、交付与CTA。'
+      )
+    );
+    checks.push(
+      makeCheck(
+        '转化信号完整性',
+        hasContactSignal && hasFormSignal && (hasPhoneSignal || hasEmailSignal) ? 'good' : 'warning',
+        `联系词：${hasContactSignal ? '有' : '无'}；表单：${hasFormSignal ? '有' : '无'}；电话/邮箱：${hasPhoneSignal || hasEmailSignal ? '有' : '无'}`,
+        '确保首屏与页脚同时提供 CTA、表单、WhatsApp/邮箱/电话至少两种联系渠道。'
+      )
+    );
+    checks.push(
+      makeCheck(
+        '国际市场与B2B信号',
+        b2bSignal && (languageSignal || keywordIncluded(visibleText, marketWords)) ? 'good' : 'warning',
+        `B2B信号：${b2bSignal ? '有' : '弱'}；多语言/市场词：${languageSignal || keywordIncluded(visibleText, marketWords) ? '有' : '弱'}`,
+        '建议补充出口/制造/认证等B2B能力描述，并增加目标市场词与多语言入口。'
+      )
     );
 
     checks.push(
@@ -352,11 +427,42 @@ async function generateSeoReport(website: string): Promise<SeoReport> {
     const warningCount = checks.filter((check) => check.status === 'warning').length;
     const badCount = checks.filter((check) => check.status === 'bad').length;
 
+    const highPriorityCount = checks.filter((check) => check.status === 'bad').length;
+    const issueCount = checks.filter((check) => check.status !== 'good').length;
+    const riskLevel: SeoReport['riskLevel'] = highPriorityCount >= 3 || score < 55 ? '高风险' : score < 78 ? '中风险' : '低风险';
+    const estimatedFixCycle = highPriorityCount >= 3 ? '2-4 周' : issueCount >= 4 ? '1-3 周' : '3-7 天';
+
+    const issuesFromChecks = (status: 'bad' | 'warning', severity: 'high' | 'medium' | 'low') =>
+      checks.filter((check) => check.status === status).map((check) => ({
+        title: check.item,
+        severity,
+        evidence: check.finding,
+        impact: severity === 'high' ? '可能直接影响收录、排名与询盘转化。' : severity === 'medium' ? '会削弱主题相关性与转化效率。' : '属于可持续优化项。',
+        recommendation: check.recommendation,
+        expectedBenefit: '提升搜索可见性与高意向询盘质量。'
+      }));
+
+    const sections: NonNullable<SeoReport['sections']> = [
+      { title: '执行摘要', summary: `综合评分 ${score}/100，风险等级 ${riskLevel}，建议优先处理 ${highPriorityCount} 个高优先级问题。`, issues: [...issuesFromChecks('bad', 'high').slice(0, 2)] },
+      { title: '技术 SEO', summary: '覆盖 canonical、robots、viewport、图片alt与链接结构。', issues: [...issuesFromChecks('bad', 'high'), ...issuesFromChecks('warning', 'medium')].slice(0, 4) },
+      { title: '页面结构', summary: '聚焦 Title、H1、H2/H3、信息层级。', issues: [...issuesFromChecks('warning', 'medium')].slice(0, 3) },
+      { title: '内容与关键词', summary: `结合产品「${product || '未提供'}」和市场「${market || '未提供'}」评估内容覆盖与语义完整性。`, issues: [...issuesFromChecks('bad', 'high'), ...issuesFromChecks('warning', 'medium')].slice(0, 3) },
+      { title: '转化线索', summary: '评估 CTA、联系方式、表单与询盘动线。', issues: checks.filter((c) => ['询盘入口', '转化信号完整性'].includes(c.item)).map((c) => ({ title: c.item, severity: (c.status === 'good' ? 'low' : 'medium') as 'low' | 'medium', evidence: c.finding, impact: '影响访客从访问到询盘的转化率。', recommendation: c.recommendation, expectedBenefit: '提升询盘率与线索质量。' })) },
+      { title: '竞争与增长机会', summary: `建议围绕 "${product} ${market}"、"${product} supplier"、"${product} manufacturer" 建立内容与落地页。`, issues: [{ title: '增长关键词方向', severity: 'low', evidence: `目标产品：${product || '未填写'}；目标市场：${market || '未填写'}`, impact: '缺少增长关键词布局会限制自然流量上限。', recommendation: '建立产品词×市场词×应用场景词的关键词矩阵，并按商业意图分配落地页。', expectedBenefit: '增加中高意图关键词覆盖，提升可持续获客能力。' }] },
+      { title: '优先级行动计划', summary: '按高-中-低优先级安排执行。', issues: [{ title: '30天行动计划', severity: highPriorityCount > 0 ? 'high' : 'medium', evidence: `高优先级问题 ${highPriorityCount} 个，待优化问题 ${issueCount} 个。`, impact: '无计划执行会导致优化分散，难形成可衡量结果。', recommendation: '第1周修复技术阻断项，第2-3周优化标题结构与内容，第4周完善转化入口并复盘数据。', expectedBenefit: '缩短见效时间，提高SEO投入产出比。' }] }
+    ];
+
     return {
       status: 'completed',
       generatedAt,
-      summary: `初步检测完成：得分 ${score}/100，发现 ${warningCount} 个可优化项，${badCount} 个高优先级问题。`,
+      summary: `专业诊断完成：得分 ${score}/100，发现 ${issueCount} 个待优化项，${highPriorityCount} 个高优先级问题。`,
       score,
+      riskLevel,
+      issueCount,
+      highPriorityCount,
+      estimatedFixCycle,
+      executiveSummary: `该站点当前SEO风险为${riskLevel}。建议先修复技术与结构问题，再围绕产品与市场做内容和转化增强。`,
+      sections,
       checks,
       page: {
         finalUrl,
@@ -373,7 +479,10 @@ async function generateSeoReport(website: string): Promise<SeoReport> {
         imagesWithoutAlt,
         internalLinks,
         externalLinks,
-        hasContactSignal
+        hasContactSignal,
+        h2Count: h2.length,
+        h3Count: h3.length,
+        bodyWordCount: wordCount
       }
     };
   } catch (error) {
@@ -551,7 +660,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: '邮箱格式不正确。' }, { status: 400 });
     }
 
-    const report = await generateSeoReport(String(body.website).trim());
+    const report = await generateSeoReport(String(body.website).trim(), String(body.product).trim(), String(body.market).trim());
 
     const baseLead: Omit<Lead, 'followup'> = {
       submittedAt: new Date().toISOString(),

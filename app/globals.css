@@ -74,6 +74,21 @@ h2 { font-size: clamp(30px, 4vw, 48px); line-height: 1.08; margin: 12px 0 18px; 
 .reportHead b, .followupHead b { display: block; color: var(--accent2); font-size: 18px; margin-bottom: 6px; }
 .reportHead p, .followupHead p { color: #dbe7f8; line-height: 1.65; margin: 0; }
 .reportHead strong { min-width: 92px; height: 92px; border-radius: 50%; display: grid; place-items: center; background: rgba(168,255,191,0.12); border: 1px solid rgba(168,255,191,0.25); color: #c8ffd8; font-size: 18px; }
+.kpiGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpiCard { background: rgba(2,8,18,0.52); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.kpiCard b { display: block; color: var(--accent); font-size: 12px; margin-bottom: 6px; }
+.kpiCard p { margin: 0; color: #f6f8fb; font-weight: 700; }
+.proSectionGrid { display: grid; gap: 12px; margin-bottom: 12px; }
+.proSectionCard { background: rgba(2,8,18,0.45); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.proSectionCard h3 { margin: 0 0 8px; font-size: 16px; }
+.proSectionCard p { margin: 0; color: #dbe7f8; line-height: 1.6; }
+.issueList { display: grid; gap: 10px; margin-top: 12px; }
+.issueCard { background: rgba(2,8,18,0.58); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.issueCard.severity-high { border-color: rgba(255,110,110,0.38); }
+.issueCard.severity-medium { border-color: rgba(255,210,97,0.35); }
+.issueCard.severity-low { border-color: rgba(168,255,191,0.28); }
+.issueTop { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.issueTop span { font-size: 12px; color: var(--subtle); }
 .reportChecks { display: grid; gap: 12px; }
 .reportCheck { background: rgba(2,8,18,0.52); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
 .reportCheck.good { border-color: rgba(168,255,191,0.28); }
@@ -96,7 +111,7 @@ h2 { font-size: clamp(30px, 4vw, 48px); line-height: 1.08; margin: 12px 0 18px; 
 .copyBlock pre { margin: 0; white-space: pre-wrap; color: #eaf1fb; line-height: 1.65; font-family: Arial, Helvetica, sans-serif; }
 .emptyState { border: 1px dashed var(--line); border-radius: 18px; padding: 28px; color: var(--subtle); text-align: center; }
 @media (max-width: 860px) {
-  .heroGrid, .formGrid, .gridList, .leadGrid, .adminLogin, .adminTools, .followupGrid { grid-template-columns: 1fr; }
+  .heroGrid, .formGrid, .gridList, .leadGrid, .adminLogin, .adminTools, .followupGrid, .kpiGrid { grid-template-columns: 1fr; }
   .hero { padding-top: 56px; }
   .auditForm { grid-template-columns: 1fr; }
   .adminHeader { flex-direction: column; }
