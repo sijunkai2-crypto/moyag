@@ -5,3 +5,31 @@ data/*.jsonl
 .env
 .env.local
 .DS_Store
+
+# Private lead data
+data/leads.json
+leads.json
+
+# Keys and certificates
+*.pem
+*.key
+*.crt
+
+# Local backup and temporary files
+*.backup_*
+*.safe_*
+*.success_*
+*.before_*
+*.fix_*
+*.type_backup_*
+*.typefix_backup_*
+*.scorefix_backup_*
+*.professional_report_backup_*
+*.b2b_google_seo_report_success_*
+*.sales_report_success_*
+*.v2_*_success_*
+*.v2_public_file_audit_success_*
+*.bak
+backups/
+*.log
+t
