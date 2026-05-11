@@ -650,6 +650,96 @@ function getEmailConfig() {
   };
 }
 
+
+function getProfessionalEmailMeta(lead: Lead) {
+  const reportAny = lead.report as any;
+  const sections = Array.isArray(reportAny?.sections) ? reportAny.sections : [];
+  const actionSection = sections.find((section: any) => String(section?.title || '').includes('优先级行动计划'));
+  const actionIssues = Array.isArray(actionSection?.issues) ? actionSection.issues.slice(0, 5) : [];
+
+  return {
+    riskLevel: String(reportAny?.riskLevel || '未评级'),
+    issueCount: String(reportAny?.issueCount ?? (Array.isArray(reportAny?.checks) ? reportAny.checks.length : 0)),
+    highPriorityCount: String(reportAny?.highPriorityCount ?? 0),
+    estimatedFixCycle: String(reportAny?.estimatedFixCycle || '待评估'),
+    executiveSummary: String(reportAny?.executiveSummary || reportAny?.summary || '暂无诊断摘要。'),
+    actionIssues
+  };
+}
+
+function buildProfessionalReportEmailHtml(lead: Lead) {
+  const meta = getProfessionalEmailMeta(lead);
+
+  const actionRows = meta.actionIssues.length
+    ? meta.actionIssues.map((issue: any) => `
+      <tr>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;font-weight:bold;">${escapeHtml(String(issue?.title || '优先处理项'))}</td>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(String(issue?.severity || 'medium'))}</td>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(String(issue?.recommendation || '建议人工复核后处理。'))}</td>
+      </tr>
+    `).join('')
+    : `
+      <tr>
+        <td colspan="3" style="padding:10px 12px;border:1px solid #e6e9ef;">暂无优先级行动计划，建议人工复核报告详情。</td>
+      </tr>
+    `;
+
+  return `
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e6e9ef;margin-bottom:18px;">
+      <tr style="background:#f7f9fc;">
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">风险等级</th>
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">问题数量</th>
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">高优先级问题</th>
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">预计修复周期</th>
+      </tr>
+      <tr>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;font-weight:bold;">${escapeHtml(meta.riskLevel)}</td>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(meta.issueCount)}</td>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(meta.highPriorityCount)}</td>
+        <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(meta.estimatedFixCycle)}</td>
+      </tr>
+    </table>
+
+    <p style="margin:0 0 12px;color:#596579;">${escapeHtml(meta.executiveSummary)}</p>
+
+    <h3 style="margin:22px 0 8px;">优先级行动计划</h3>
+    <table style="width:100%;border-collapse:collapse;border:1px solid #e6e9ef;margin-bottom:22px;">
+      <tr style="background:#f7f9fc;">
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">处理项</th>
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">等级</th>
+        <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">建议</th>
+      </tr>
+      ${actionRows}
+    </table>
+  `;
+}
+
+function buildProfessionalReportEmailTextLines(lead: Lead) {
+  const meta = getProfessionalEmailMeta(lead);
+  const lines = [
+    `风险等级：${meta.riskLevel}`,
+    `问题数量：${meta.issueCount}`,
+    `高优先级问题：${meta.highPriorityCount}`,
+    `预计修复周期：${meta.estimatedFixCycle}`,
+    `执行摘要：${meta.executiveSummary}`,
+    '',
+    '优先级行动计划'
+  ];
+
+  if (meta.actionIssues.length) {
+    for (const issue of meta.actionIssues) {
+      lines.push(
+        `- ${String(issue?.title || '优先处理项')}｜等级：${String(issue?.severity || 'medium')}｜建议：${String(issue?.recommendation || '建议人工复核后处理。')}`
+      );
+    }
+  } else {
+    lines.push('- 暂无优先级行动计划，建议人工复核报告详情。');
+  }
+
+  return lines;
+}
+
+
 function buildLeadEmailHtml(lead: Lead) {
   const rows = [
     ['提交时间', lead.submittedAt],
@@ -686,8 +776,9 @@ function buildLeadEmailHtml(lead: Lead) {
         `).join('')}
       </table>
 
-      <h3 style="margin:22px 0 8px;">SEO 初步诊断草稿</h3>
-      <p style="margin:0 0 12px;color:#596579;">${escapeHtml(lead.report.summary)}</p>
+      <h3 style="margin:22px 0 8px;">SEO 专业诊断摘要</h3>
+      ${buildProfessionalReportEmailHtml(lead)}
+      <h3 style="margin:22px 0 8px;">基础检测明细</h3>
       <table style="width:100%;border-collapse:collapse;border:1px solid #e6e9ef;">
         <tr style="background:#f7f9fc;">
           <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">检查项</th>
@@ -725,8 +816,10 @@ function buildLeadEmailText(lead: Lead) {
     `WhatsApp / 微信：${lead.messenger || '未填写'}`,
     `补充说明：${lead.note || '未填写'}`,
     '',
-    'SEO 初步诊断草稿',
-    lead.report.summary,
+    'SEO 专业诊断摘要',
+    ...buildProfessionalReportEmailTextLines(lead),
+    '',
+    '基础检测明细',
     ...lead.report.checks.flatMap((check) => [
       '',
       `检查项：${check.item}`,
@@ -766,7 +859,7 @@ async function sendLeadNotification(lead: Lead) {
     from: config.from,
     to: config.to,
     replyTo: lead.email,
-    subject: `新 SEO 检测线索：${lead.company}｜初步得分 ${lead.report.score}/100｜跟进优先级 ${lead.followup.priority}`,
+    subject: `新 SEO 检测线索：${lead.company}｜${(lead.report as any).riskLevel || '未评级'}｜得分 ${lead.report.score}/100｜跟进优先级 ${lead.followup.priority}`,
     text: buildLeadEmailText(lead),
     html: buildLeadEmailHtml(lead)
   });
