@@ -38,7 +38,10 @@ async function readJsonArray(filePath: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const password = request.nextUrl.searchParams.get('password') || '';
+  const password =
+    request.nextUrl.searchParams.get('password') ||
+    request.headers.get('x-admin-password') ||
+    '';
   const adminPassword = process.env.ADMIN_PASSWORD || '';
 
   if (!adminPassword || password !== adminPassword) {
@@ -52,9 +55,13 @@ export async function GET(request: NextRequest) {
 
   const jsonlPath = path.join(cwd, 'data', 'leads.jsonl');
   const legacyJsonPath = path.join(cwd, 'leads.json');
+  const legacyDataJsonPath = path.join(cwd, 'data', 'leads.json');
 
   const jsonlLeads = await readJsonl(jsonlPath);
-  const legacyLeads = await readJsonArray(legacyJsonPath);
+  const legacyLeads = [
+    ...(await readJsonArray(legacyJsonPath)),
+    ...(await readJsonArray(legacyDataJsonPath))
+  ];
 
   const leads = [...jsonlLeads, ...legacyLeads].sort((a: any, b: any) => {
     const at = new Date(a?.submittedAt || 0).getTime();
