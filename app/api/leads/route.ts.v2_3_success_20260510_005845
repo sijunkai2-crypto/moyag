@@ -1,0 +1,1420 @@
+import { NextResponse } from 'next/server';
+import { promises as fs } from 'fs';
+import path from 'path';
+import nodemailer from 'nodemailer';
+
+type LeadPayload = {
+  company?: string;
+  website?: string;
+  product?: string;
+  market?: string;
+  problem?: string;
+  contactName?: string;
+  email?: string;
+  messenger?: string;
+  note?: string;
+};
+
+type SeoReport = {
+  status: 'completed' | 'failed';
+  generatedAt: string;
+  summary: string;
+  score: number;
+  checks: Array<{
+    item: string;
+    status: 'good' | 'warning' | 'bad';
+    finding: string;
+    recommendation: string;
+  }>;
+  page: {
+    finalUrl?: string;
+    title?: string;
+    titleLength?: number;
+    description?: string;
+    descriptionLength?: number;
+    h1?: string[];
+    h1Count?: number;
+    canonical?: string;
+    robots?: string;
+    viewport?: string;
+    imageCount?: number;
+    imagesWithoutAlt?: number;
+    internalLinks?: number;
+    externalLinks?: number;
+    hasContactSignal?: boolean;
+  };
+};
+
+type FollowupPackage = {
+  priority: '高' | '中' | '低';
+  angle: string;
+  nextAction: string;
+  offer: string;
+  emailSubject: string;
+  emailBody: string;
+  whatsappMessage: string;
+  callScript: string;
+};
+
+type Lead = Required<Pick<LeadPayload, 'company' | 'website' | 'product' | 'market' | 'problem' | 'contactName' | 'email'>> & {
+  submittedAt: string;
+  status: string;
+  messenger: string;
+  note: string;
+  report: SeoReport;
+  followup: FollowupPackage;
+};
+
+const requiredFields: Array<keyof LeadPayload> = [
+  'company',
+  'website',
+  'product',
+  'market',
+  'problem',
+  'contactName',
+  'email'
+];
+
+function isValidUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function stripHtml(value: string) {
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function decodeBasicEntities(value: string) {
+  return value
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}
+
+function getTagContent(html: string, tag: string) {
+  const match = html.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
+  return match ? decodeBasicEntities(stripHtml(match[1])) : '';
+}
+
+function getAllTagContent(html: string, tag: string) {
+  const matches = [...html.matchAll(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi'))];
+  return matches.map((match) => decodeBasicEntities(stripHtml(match[1]))).filter(Boolean);
+}
+
+function getAttribute(tagHtml: string, attribute: string) {
+  const match = tagHtml.match(new RegExp(`${attribute}=["']([^"']*)["']`, 'i'));
+  return match ? decodeBasicEntities(match[1]) : '';
+}
+
+function getMetaContent(html: string, key: string) {
+  const metas = [...html.matchAll(/<meta\b[^>]*>/gi)].map((match) => match[0]);
+  const target = key.toLowerCase();
+
+  for (const meta of metas) {
+    const name = getAttribute(meta, 'name').toLowerCase();
+    const property = getAttribute(meta, 'property').toLowerCase();
+    if (name === target || property === target) return getAttribute(meta, 'content');
+  }
+
+  return '';
+}
+
+function getLinkHref(html: string, relValue: string) {
+  const links = [...html.matchAll(/<link\b[^>]*>/gi)].map((match) => match[0]);
+  const target = relValue.toLowerCase();
+
+  for (const link of links) {
+    const rel = getAttribute(link, 'rel').toLowerCase();
+    if (rel === target) return getAttribute(link, 'href');
+  }
+
+  return '';
+}
+
+function countLinks(html: string, baseUrl: string) {
+  const base = new URL(baseUrl);
+  const anchors = [...html.matchAll(/<a\b[^>]*>/gi)].map((match) => match[0]);
+  let internalLinks = 0;
+  let externalLinks = 0;
+
+  for (const anchor of anchors) {
+    const href = getAttribute(anchor, 'href');
+    if (!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:')) continue;
+
+    try {
+      const url = new URL(href, base);
+      if (url.hostname === base.hostname) internalLinks += 1;
+      else externalLinks += 1;
+    } catch {
+      // Ignore malformed links.
+    }
+  }
+
+  return { internalLinks, externalLinks };
+}
+
+function makeCheck(item: string, status: 'good' | 'warning' | 'bad', finding: string, recommendation: string) {
+  return { item, status, finding, recommendation };
+}
+
+function pickTopProblems(report: any) {
+  const severityRank = (severity: string) => {
+    if (severity === 'high' || severity === 'bad') return 3;
+    if (severity === 'medium' || severity === 'warning') return 2;
+    return 1;
+  };
+
+  const familyKey = (title: string, evidence = '') => {
+    const combined = `${title} ${evidence}`.toLowerCase();
+
+    if (/sitemap/i.test(combined) || /站点地图/.test(title)) return 'sitemap';
+    if (/h1/i.test(combined) || /主标题/.test(title)) return 'h1';
+    if (/title/i.test(combined) || /标题/.test(title)) return 'title';
+    if (/产品关键词覆盖不足|产品关键词|核心产品|主营产品/i.test(combined)) return 'product-keyword';
+    if (/采购型关键词|商业搜索意图|supplier|manufacturer|factory|quote|inquiry/i.test(combined)) return 'purchase-intent';
+    if (/robots\.txt/i.test(combined) || /robots 抓取/.test(title)) return 'robots';
+    if (/询盘|转化|contact|quote|whatsapp|cta/i.test(combined)) return 'conversion';
+    if (/description/i.test(combined) || /描述/.test(title)) return 'description';
+    if (/http 状态|状态码/.test(title)) return 'homepage-status';
+    if (/https/i.test(combined) || /安全/.test(title)) return 'https';
+    if (/canonical/i.test(combined)) return 'canonical';
+    if (/alt|图片/i.test(combined)) return 'image-alt';
+
+    return title.replace(/\s+/g, '').slice(0, 32);
+  };
+
+  const familyPriority = (key: string) => {
+    const order: Record<string, number> = {
+      sitemap: 100,
+      h1: 98,
+      title: 96,
+      'product-keyword': 94,
+      'purchase-intent': 92,
+      robots: 80,
+      conversion: 76,
+      description: 72,
+      'homepage-status': 70,
+      https: 68,
+      canonical: 55,
+      'image-alt': 45
+    };
+
+    return order[key] || 10;
+  };
+
+  const isUsefulSalesProblem = (title: string) => {
+    return title &&
+      !/整体 SEO 诊断结论|暂无严重问题|基础表现可用|整体诊断|整体 SEO/i.test(title);
+  };
+
+  const professionalIssues = Array.isArray(report?.sections)
+    ? report.sections.flatMap((section: any) =>
+        Array.isArray(section?.issues)
+          ? section.issues.map((issue: any) => ({
+              title: String(issue?.title || ''),
+              severity: String(issue?.severity || 'medium'),
+              recommendation: String(issue?.recommendation || ''),
+              evidence: String(issue?.evidence || ''),
+              source: 'section'
+            }))
+          : []
+      )
+    : [];
+
+  const checkIssues = Array.isArray(report?.checks)
+    ? report.checks
+        .filter((check: any) => check?.status !== 'good')
+        .map((check: any) => ({
+          title: String(check?.item || ''),
+          severity: String(check?.status || 'warning'),
+          recommendation: String(check?.recommendation || ''),
+          evidence: String(check?.finding || ''),
+          source: 'check'
+        }))
+    : [];
+
+  const candidates = [...professionalIssues, ...checkIssues]
+    .filter((issue) => isUsefulSalesProblem(issue.title))
+    .filter((issue) => issue.recommendation);
+
+  const selected = new Map<string, any>();
+
+  for (const issue of candidates) {
+    const key = familyKey(issue.title, issue.evidence);
+    const existing = selected.get(key);
+
+    if (
+      !existing ||
+      issue.source === 'section' && existing.source !== 'section' ||
+      severityRank(issue.severity) > severityRank(existing.severity)
+    ) {
+      selected.set(key, issue);
+    }
+  }
+
+  return [...selected.values()]
+    .sort((a, b) => {
+      const priorityDiff =
+        familyPriority(familyKey(b.title, b.evidence)) -
+        familyPriority(familyKey(a.title, a.evidence));
+
+      if (priorityDiff !== 0) return priorityDiff;
+
+      return severityRank(b.severity) - severityRank(a.severity);
+    })
+    .slice(0, 4)
+    .map((issue) => `${issue.title}：${issue.recommendation}`);
+}
+
+function generateFollowupPackage(lead: Omit<Lead, 'followup'>): FollowupPackage {
+  const reportAny = lead.report as any;
+  const topProblems = pickTopProblems(reportAny);
+  const mainProblem = topProblems[0] || '官网已经具备一定 SEO 基础，但还可以继续强化关键词承接、询盘入口和内容结构。';
+
+  const highPriorityCount = typeof reportAny?.highPriorityCount === 'number'
+    ? reportAny.highPriorityCount
+    : Array.isArray(reportAny?.checks)
+      ? reportAny.checks.filter((check: any) => check?.status === 'bad').length
+      : 0;
+
+  const priority: FollowupPackage['priority'] =
+    reportAny?.status === 'failed' || reportAny?.score < 55 || highPriorityCount >= 3
+      ? '高'
+      : reportAny?.score < 78 || highPriorityCount >= 1
+        ? '中'
+        : '低';
+
+  const angle = `客户主营 ${lead.product}，目标市场是 ${lead.market}。跟进时不要只讲“SEO 分数”，要讲清楚 Google 如何抓取官网、页面如何承接采购型关键词、访问者如何转化为询盘。建议用「${mainProblem}」作为第一切入点。`;
+
+  const offer = '提供 1 次免费 15 分钟 B2B Google SEO 诊断复盘，交付首页关键问题、关键词方向、Google 抓取风险和询盘路径优化建议。';
+
+  const nextAction = priority === '高'
+    ? '24 小时内邮件 + WhatsApp/微信同步跟进，主打“Google 抓取、收录和询盘入口存在优先修复项”，尽快约诊断电话。'
+    : priority === '中'
+      ? '48 小时内发送诊断摘要，主打“已有官网基础，但关键词承接和转化路径还可提升”。'
+      : '3 天内发送礼貌型优化建议，主打“继续扩展长尾关键词页面和内容资产”。';
+
+  const subject = `${lead.company} 官网 Google SEO 诊断：发现 ${topProblems.length || 1} 个影响询盘增长的优化点`;
+
+  const bullets = topProblems.length
+    ? topProblems.map((item) => `- ${item}`).join('\n')
+    : '- 当前官网已有基础 SEO 信号，建议继续强化产品关键词、目标市场表达、信任背书和询盘入口。';
+
+  const emailBody = `Hi ${lead.contactName},
+
+我们已经完成了 ${lead.company} 官网的初步 Google SEO 诊断。结合你提交的目标市场「${lead.market}」和主营产品/服务「${lead.product}」，目前最值得优先处理的是：
+
+${bullets}
+
+这些问题不只是“页面标签”的问题。它们会影响三件事：
+
+1. Google 能不能顺利抓取和理解你的网站
+2. 海外采购商能不能快速判断你是否匹配需求
+3. 访问者进入官网后，能不能顺利完成询盘动作
+
+我们建议先做一次 15 分钟免费复盘，把首页 SEO、关键词方向、Google 抓取基础和询盘路径拆开讲清楚。你这两天方便约一个时间吗？
+
+Best regards,
+Moyag AI SEO Team`;
+
+  const whatsappMessage = `${lead.contactName} 你好，我们刚看完 ${lead.company} 的官网 Google SEO 初步诊断。主要发现：${topProblems[0] || '官网还有提升 Google 询盘转化的空间'}。这类问题会影响 Google 抓取、关键词承接和询盘转化。可以免费帮你做一次 15 分钟复盘，你这两天方便吗？`;
+
+  const callScript = `开场：您好，我是 Moyag，刚收到您提交的官网 SEO 检测需求。\n确认：您现在更关注 ${lead.market} 市场的自然流量，还是更关注官网询盘转化？\n切入：我们初步看到的优先问题是「${mainProblem}」。这类问题通常会影响 Google 抓取、页面主题判断，以及客户进站后的询盘动作。\n解释：我们不是只看 Title 和 Description，而是会把 Google 抓取基础、关键词承接、信任背书和转化路径一起拆开。\n邀约：我建议先用 15 分钟把首页、关键词和询盘入口过一遍，您看今天或明天哪个时间方便？`;
+
+  return {
+    priority,
+    angle,
+    nextAction,
+    offer,
+    emailSubject: subject,
+    emailBody,
+    whatsappMessage,
+    callScript
+  };
+}
+
+
+async function fetchTextWithTimeout(url: string, timeoutMs = 6000): Promise<{ ok: boolean; status: number; text: string; url: string }> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'user-agent': 'Mozilla/5.0 Moyag SEO Audit Bot/0.1'
+      }
+    });
+
+    clearTimeout(timeout);
+
+    const text = await response.text();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      text,
+      url: response.url || url
+    };
+  } catch {
+    return {
+      ok: false,
+      status: 0,
+      text: '',
+      url
+    };
+  }
+}
+
+async function inspectPublicSeoFiles(finalUrl: string) {
+  const parsed = new URL(finalUrl);
+  const origin = parsed.origin;
+  const usesHttps = parsed.protocol === 'https:';
+
+  const robotsUrl = `${origin}/robots.txt`;
+  const sitemapUrl = `${origin}/sitemap.xml`;
+
+  const robotsResponse = await fetchTextWithTimeout(robotsUrl, 6000);
+  const robotsText = robotsResponse.text || '';
+  const robotsExists = robotsResponse.ok && robotsText.trim().length > 0;
+  const robotsBlocksAll = /disallow\s*:\s*\/\s*$/im.test(robotsText);
+  const robotsHasSitemap = /sitemap\s*:/i.test(robotsText);
+
+  const sitemapResponse = await fetchTextWithTimeout(sitemapUrl, 6000);
+  const sitemapText = sitemapResponse.text || '';
+  const sitemapExists = sitemapResponse.ok && /<urlset|<sitemapindex|<loc>/i.test(sitemapText);
+  const sitemapUrlCount = sitemapExists ? (sitemapText.match(/<loc>/gi) || []).length : 0;
+
+  return {
+    homepageStatus: 200,
+    usesHttps,
+    robotsTxt: {
+      exists: robotsExists,
+      status: robotsResponse.status,
+      blocksAll: robotsBlocksAll,
+      hasSitemap: robotsHasSitemap,
+      url: robotsUrl
+    },
+    sitemap: {
+      exists: sitemapExists,
+      status: sitemapResponse.status,
+      urlCount: sitemapUrlCount,
+      url: sitemapUrl
+    }
+  };
+}
+
+
+async function generateSeoReport(website: string): Promise<any> {
+  const generatedAt = new Date().toISOString();
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 9000);
+    const response = await fetch(website, {
+      signal: controller.signal,
+      headers: {
+        'user-agent': 'Mozilla/5.0 Moyag SEO Audit Bot/0.1'
+      }
+    });
+    clearTimeout(timeout);
+
+    const html = await response.text();
+    const finalUrl = response.url || website;
+    const technical = await inspectPublicSeoFiles(finalUrl);
+    technical.homepageStatus = response.status;
+    const title = getTagContent(html, 'title');
+    const description = getMetaContent(html, 'description');
+    const h1 = getAllTagContent(html, 'h1');
+    const canonical = getLinkHref(html, 'canonical');
+    const robots = getMetaContent(html, 'robots');
+    const viewport = getMetaContent(html, 'viewport');
+    const imageTags = [...html.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
+    const imageCount = imageTags.length;
+    const imagesWithoutAlt = imageTags.filter((img) => !getAttribute(img, 'alt')).length;
+    const { internalLinks, externalLinks } = countLinks(html, finalUrl);
+    const visibleText = stripHtml(html).toLowerCase();
+    const hasContactSignal = /contact|quote|inquiry|enquiry|whatsapp|email|request|rfq|咨询|联系/i.test(visibleText);
+
+    const checks: SeoReport['checks'] = [];
+
+    checks.push(
+      title
+        ? makeCheck(
+            'Title 标题',
+            title.length >= 30 && title.length <= 65 ? 'good' : 'warning',
+            `检测到标题：${title}（${title.length} 字符）`,
+            title.length >= 30 && title.length <= 65
+              ? '标题长度基本合适，后续需要加入核心产品词和目标市场词。'
+              : '建议将 Title 控制在 30-65 字符，并前置核心产品关键词。'
+          )
+        : makeCheck('Title 标题', 'bad', '未检测到页面 Title。', '需要为首页添加清晰的英文 Title，包含产品、用途和品牌。')
+    );
+
+    checks.push(
+      description
+        ? makeCheck(
+            'Meta Description',
+            description.length >= 70 && description.length <= 160 ? 'good' : 'warning',
+            `检测到描述：${description}（${description.length} 字符）`,
+            description.length >= 70 && description.length <= 160
+              ? '描述长度基本合适，建议继续强化询盘理由和差异化卖点。'
+              : '建议将描述控制在 70-160 字符，并写清产品、应用、认证、交付能力。'
+          )
+        : makeCheck('Meta Description', 'bad', '未检测到 Meta Description。', '需要补充首页描述，用于提升 Google 搜索摘要点击率。')
+    );
+
+    checks.push(
+      h1.length === 1
+        ? makeCheck('H1 主标题', 'good', `检测到 1 个 H1：${h1[0]}`, 'H1 数量合理，后续可检查是否包含核心产品词。')
+        : h1.length === 0
+          ? makeCheck('H1 主标题', 'bad', '未检测到 H1。', '首页需要 1 个清晰 H1，说明主营产品和目标客户。')
+          : makeCheck('H1 主标题', 'warning', `检测到 ${h1.length} 个 H1。`, '建议首页只保留 1 个 H1，其余主标题改为 H2/H3。')
+    );
+
+    checks.push(
+      viewport
+        ? makeCheck('移动端适配', 'good', '检测到 viewport 标签。', '移动端基础适配存在，后续需用真机检查首屏转化。')
+        : makeCheck('移动端适配', 'warning', '未检测到 viewport 标签。', '建议添加 viewport，避免移动端展示异常。')
+    );
+
+    checks.push(
+      canonical
+        ? makeCheck('Canonical', 'good', `检测到 canonical：${canonical}`, '规范链接存在，可减少重复页面风险。')
+        : makeCheck('Canonical', 'warning', '未检测到 canonical。', '建议为核心页面添加 canonical，尤其是多语言或多参数页面。')
+    );
+
+    checks.push(
+      imageCount > 0
+        ? makeCheck(
+            '图片 Alt',
+            imagesWithoutAlt === 0 ? 'good' : 'warning',
+            `检测到 ${imageCount} 张图片，其中 ${imagesWithoutAlt} 张缺少 alt。`,
+            imagesWithoutAlt === 0
+              ? '图片 alt 基础良好，后续可加入产品词和应用场景词。'
+              : '建议为产品图、工厂图、案例图添加英文 alt，帮助图片 SEO 和页面语义。'
+          )
+        : makeCheck('图片 Alt', 'warning', '首页未检测到图片。', 'B2B 官网建议补充产品、工厂、应用场景图片，并配置 alt。')
+    );
+
+    checks.push(
+      internalLinks >= 5
+        ? makeCheck('内链结构', 'good', `检测到约 ${internalLinks} 个内部链接。`, '内链基础可用，后续可增加产品分类、案例、博客之间的语义链接。')
+        : makeCheck('内链结构', 'warning', `检测到约 ${internalLinks} 个内部链接。`, '建议增加产品分类页、应用页、案例页、联系我们页之间的内链。')
+    );
+
+    checks.push(
+      hasContactSignal
+        ? makeCheck('询盘入口', 'good', '首页检测到联系、询盘或报价相关信号。', '后续可优化按钮位置和表单字段，降低客户提交阻力。')
+        : makeCheck('询盘入口', 'warning', '首页未明显检测到联系/询盘/报价信号。', '建议在首屏和产品区增加 Request a Quote / Contact Us / WhatsApp 入口。')
+    );
+
+    if (robots && /noindex/i.test(robots)) {
+      checks.push(makeCheck('Robots 索引', 'bad', `检测到 robots：${robots}`, '页面可能禁止 Google 收录，需要立即检查。'));
+    } else {
+      checks.push(makeCheck('Robots 索引', 'good', robots ? `检测到 robots：${robots}` : '未检测到 noindex。', '暂未发现明显禁止收录信号。'));
+    }
+
+    checks.push(
+      technical.usesHttps
+        ? makeCheck('HTTPS 安全访问', 'good', '官网使用 HTTPS 访问。', 'HTTPS 基础正常，利于用户信任和浏览器安全展示。')
+        : makeCheck('HTTPS 安全访问', 'bad', '官网当前不是 HTTPS 访问。', '建议启用 HTTPS 并将 HTTP 统一 301 跳转到 HTTPS，避免浏览器安全提示和信任损耗。')
+    );
+
+    checks.push(
+      technical.homepageStatus === 200
+        ? makeCheck('首页 HTTP 状态', 'good', `首页返回状态码 ${technical.homepageStatus}。`, '首页可正常访问，Google 抓取基础正常。')
+        : makeCheck('首页 HTTP 状态', 'bad', `首页返回状态码 ${technical.homepageStatus || '未知'}。`, '建议检查服务器、重定向、防火墙或 CDN 配置，确保首页稳定返回 200。')
+    );
+
+    checks.push(
+      technical.robotsTxt.blocksAll
+        ? makeCheck('robots.txt 抓取规则', 'bad', 'robots.txt 存在 Disallow: /，可能阻止全站抓取。', '需要立即检查 robots.txt，避免阻止 Google 抓取核心页面。')
+        : technical.robotsTxt.exists
+          ? makeCheck(
+              'robots.txt 抓取规则',
+              technical.robotsTxt.hasSitemap ? 'good' : 'warning',
+              `robots.txt 可访问，状态码 ${technical.robotsTxt.status}，${technical.robotsTxt.hasSitemap ? '已包含 Sitemap 声明' : '未发现 Sitemap 声明'}。`,
+              technical.robotsTxt.hasSitemap
+                ? 'robots.txt 基础良好，后续可继续检查是否屏蔽重要目录。'
+                : '建议在 robots.txt 中声明 Sitemap 地址，帮助 Google 更快发现核心页面。'
+            )
+          : makeCheck('robots.txt 抓取规则', 'warning', `未能访问 robots.txt，状态码 ${technical.robotsTxt.status || '未知'}。`, '建议补充 robots.txt，用于管理搜索引擎抓取规则并声明 Sitemap。')
+    );
+
+    checks.push(
+      technical.sitemap.exists
+        ? makeCheck(
+            'sitemap.xml 站点地图',
+            technical.sitemap.urlCount >= 5 ? 'good' : 'warning',
+            `sitemap.xml 可访问，检测到约 ${technical.sitemap.urlCount} 个 URL。`,
+            technical.sitemap.urlCount >= 5
+              ? '站点地图基础可用，后续可检查是否覆盖产品页、案例页和重点 SEO 页面。'
+              : '站点地图 URL 数量偏少，建议确认是否覆盖核心产品页、行业页、案例页和联系页。'
+          )
+        : makeCheck('sitemap.xml 站点地图', 'bad', `未能检测到有效 sitemap.xml，状态码 ${technical.sitemap.status || '未知'}。`, '建议创建 sitemap.xml 并提交到 Google Search Console，帮助核心页面被发现和索引。')
+    );
+
+    const score = Math.max(0, Math.min(100, Math.round(checks.reduce((sum, check) => {
+      if (check.status === 'good') return sum + 11;
+      if (check.status === 'warning') return sum + 6;
+      return sum + 1;
+    }, 0))));
+
+    const warningCount = checks.filter((check) => check.status === 'warning').length;
+    const badCount = checks.filter((check) => check.status === 'bad').length;
+
+    return {
+      status: 'completed',
+      generatedAt,
+      summary: `初步检测完成：得分 ${score}/100，发现 ${warningCount} 个可优化项，${badCount} 个高优先级问题。`,
+      score,
+      checks,
+      page: {
+        finalUrl,
+        title,
+        titleLength: title.length,
+        description,
+        descriptionLength: description.length,
+        h1,
+        h1Count: h1.length,
+        canonical,
+        robots,
+        viewport,
+        imageCount,
+        imagesWithoutAlt,
+        internalLinks,
+        externalLinks,
+        hasContactSignal,
+        technical
+      }
+    };
+  } catch (error) {
+    console.error('Failed to generate SEO report:', error);
+    return {
+      status: 'failed',
+      generatedAt,
+      summary: '系统未能自动抓取该官网首页，可能是目标网站阻止访问、响应超时或 SSL 配置异常。线索已正常保存，建议人工打开官网检查。',
+      score: 0,
+      checks: [
+        makeCheck('官网抓取', 'bad', '自动抓取失败。', '人工确认官网是否可访问，并检查是否屏蔽海外服务器或爬虫访问。')
+      ],
+      page: {}
+    };
+  }
+}
+
+function getEmailConfig() {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 465);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const to = process.env.LEAD_NOTIFY_TO || user;
+  const from = process.env.LEAD_NOTIFY_FROM || user;
+
+  if (!host || !user || !pass || !to || !from) return null;
+
+  return {
+    host,
+    port,
+    secure: port === 465,
+    auth: { user, pass },
+    to,
+    from
+  };
+}
+
+function buildLeadEmailHtml(lead: Lead) {
+  const rows = [
+    ['提交时间', lead.submittedAt],
+    ['公司名称', lead.company],
+    ['官网链接', lead.website],
+    ['主营产品 / 服务', lead.product],
+    ['目标市场', lead.market],
+    ['当前问题', lead.problem],
+    ['联系人', lead.contactName],
+    ['邮箱', lead.email],
+    ['WhatsApp / 微信', lead.messenger || '未填写'],
+    ['补充说明', lead.note || '未填写']
+  ];
+
+  const reportRows = lead.report.checks.map((check) => `
+    <tr>
+      <td style="padding:10px 12px;border:1px solid #e6e9ef;font-weight:bold;">${escapeHtml(check.item)}</td>
+      <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(check.status)}</td>
+      <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(check.finding)}</td>
+      <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(check.recommendation)}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.7;color:#172033;max-width:860px;">
+      <h2 style="margin:0 0 16px;">Moyag SEO 检测新线索</h2>
+      <p style="margin:0 0 18px;color:#596579;">客户刚刚提交了官网 SEO 检测需求。系统已生成初步诊断草稿和销售跟进建议，请人工复核后跟进。</p>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e6e9ef;margin-bottom:22px;">
+        ${rows.map(([label, value]) => `
+          <tr>
+            <td style="width:170px;padding:10px 12px;border:1px solid #e6e9ef;background:#f7f9fc;font-weight:bold;">${escapeHtml(label)}</td>
+            <td style="padding:10px 12px;border:1px solid #e6e9ef;">${escapeHtml(value)}</td>
+          </tr>
+        `).join('')}
+      </table>
+
+      <h3 style="margin:22px 0 8px;">SEO 初步诊断草稿</h3>
+      <p style="margin:0 0 12px;color:#596579;">${escapeHtml(lead.report.summary)}</p>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e6e9ef;">
+        <tr style="background:#f7f9fc;">
+          <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">检查项</th>
+          <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">状态</th>
+          <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">发现</th>
+          <th style="padding:10px 12px;border:1px solid #e6e9ef;text-align:left;">建议</th>
+        </tr>
+        ${reportRows}
+      </table>
+
+      <h3 style="margin:22px 0 8px;">销售跟进包</h3>
+      <p><b>优先级：</b>${escapeHtml(lead.followup.priority)}</p>
+      <p><b>切入角度：</b>${escapeHtml(lead.followup.angle)}</p>
+      <p><b>下一步：</b>${escapeHtml(lead.followup.nextAction)}</p>
+      <p><b>邀约：</b>${escapeHtml(lead.followup.offer)}</p>
+      <p><b>邮件标题：</b>${escapeHtml(lead.followup.emailSubject)}</p>
+      <pre style="white-space:pre-wrap;background:#f7f9fc;border:1px solid #e6e9ef;border-radius:12px;padding:14px;">${escapeHtml(lead.followup.emailBody)}</pre>
+      <p><b>WhatsApp/微信：</b>${escapeHtml(lead.followup.whatsappMessage)}</p>
+    </div>
+  `;
+}
+
+function buildLeadEmailText(lead: Lead) {
+  return [
+    'Moyag SEO 检测新线索',
+    '',
+    `提交时间：${lead.submittedAt}`,
+    `公司名称：${lead.company}`,
+    `官网链接：${lead.website}`,
+    `主营产品 / 服务：${lead.product}`,
+    `目标市场：${lead.market}`,
+    `当前问题：${lead.problem}`,
+    `联系人：${lead.contactName}`,
+    `邮箱：${lead.email}`,
+    `WhatsApp / 微信：${lead.messenger || '未填写'}`,
+    `补充说明：${lead.note || '未填写'}`,
+    '',
+    'SEO 初步诊断草稿',
+    lead.report.summary,
+    ...lead.report.checks.flatMap((check) => [
+      '',
+      `检查项：${check.item}`,
+      `状态：${check.status}`,
+      `发现：${check.finding}`,
+      `建议：${check.recommendation}`
+    ]),
+    '',
+    '销售跟进包',
+    `优先级：${lead.followup.priority}`,
+    `切入角度：${lead.followup.angle}`,
+    `下一步：${lead.followup.nextAction}`,
+    `邀约：${lead.followup.offer}`,
+    `邮件标题：${lead.followup.emailSubject}`,
+    lead.followup.emailBody,
+    `WhatsApp/微信：${lead.followup.whatsappMessage}`,
+    `电话脚本：${lead.followup.callScript}`
+  ].join('\n');
+}
+
+async function sendLeadNotification(lead: Lead) {
+  const config = getEmailConfig();
+
+  if (!config) {
+    console.warn('SMTP email notification is not configured. Lead was saved locally only.');
+    return;
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: config.auth
+  });
+
+  await transporter.sendMail({
+    from: config.from,
+    to: config.to,
+    replyTo: lead.email,
+    subject: `新 SEO 检测线索：${lead.company}｜初步得分 ${lead.report.score}/100｜跟进优先级 ${lead.followup.priority}`,
+    text: buildLeadEmailText(lead),
+    html: buildLeadEmailHtml(lead)
+  });
+}
+
+
+
+type ProfessionalIssue = {
+  title: string;
+  severity: 'high' | 'medium' | 'low';
+  evidence: string;
+  impact: string;
+  recommendation: string;
+  expectedBenefit: string;
+};
+
+type ProfessionalSection = {
+  title: string;
+  summary: string;
+  issues: ProfessionalIssue[];
+};
+
+function normalizeSeverity(status?: string): 'high' | 'medium' | 'low' {
+  if (status === 'bad') return 'high';
+  if (status === 'warning') return 'medium';
+  return 'low';
+}
+
+function buildProfessionalIssue(
+  title: string,
+  severity: 'high' | 'medium' | 'low',
+  evidence: string,
+  impact: string,
+  recommendation: string,
+  expectedBenefit: string
+): ProfessionalIssue {
+  return { title, severity, evidence, impact, recommendation, expectedBenefit };
+}
+
+function includesAny(source: string, words: string[]) {
+  const lower = source.toLowerCase();
+  return words.some((word) => lower.includes(word.toLowerCase()));
+}
+
+function upgradeSeoReportForProfessionalView(report: any, input: any) {
+  const checks = Array.isArray(report?.checks) ? report.checks : [];
+  const page = report?.page || {};
+
+  const company = String(input?.company || input?.companyName || '该企业').trim();
+  const product = String(input?.product || input?.service || input?.mainProduct || '核心产品/服务').trim();
+  const market = String(input?.market || input?.targetMarket || '目标海外市场').trim();
+  const problem = String(input?.problem || input?.currentProblem || input?.message || 'Google 获客效果不稳定').trim();
+
+  const bodyText = [
+    page.title,
+    page.description,
+    page.h1Text,
+    page.bodyText,
+    page.rawText,
+    ...(Array.isArray(page.h1) ? page.h1 : []),
+    ...(Array.isArray(page.h2) ? page.h2 : []),
+    ...(Array.isArray(page.h3) ? page.h3 : [])
+  ].filter(Boolean).join(' ');
+
+  const lowerBody = bodyText.toLowerCase();
+
+  const productWords = product.split(/\s+|,|，|\/|、|\|/).filter((word) => word && word.length >= 2);
+  const marketWords = market.split(/\s+|,|，|\/|、|\|/).filter((word) => word && word.length >= 2);
+
+  const commercialIntentWords = [
+    'supplier', 'manufacturer', 'factory', 'exporter', 'wholesale', 'custom',
+    'solution', 'quote', 'inquiry', 'price', 'oem', 'odm', 'bulk',
+    '供应商', '厂家', '工厂', '出口', '批发', '定制', '报价', '询盘', '采购'
+  ];
+
+  const trustWords = [
+    'about', 'factory', 'certificate', 'certification', 'case', 'project',
+    'faq', 'blog', 'quality', 'iso', 'ce', 'fda', 'experience',
+    '关于', '工厂', '认证', '证书', '案例', '质量', '资质', '经验', '常见问题'
+  ];
+
+  const conversionWords = [
+    'contact', 'inquiry', 'quote', 'form', 'email', 'phone', 'whatsapp',
+    'get a quote', 'request quote', 'book a call',
+    '联系', '询盘', '报价', '表单', '邮箱', '电话', '微信'
+  ];
+
+  const globalMarketWords = [
+    'usa', 'us', 'america', 'europe', 'global', 'export', 'international',
+    'overseas', 'worldwide', 'north america', 'eu',
+    '美国', '欧洲', '海外', '全球', '出口', '国际'
+  ];
+
+  const hasProductSignal = productWords.length > 0 && includesAny(bodyText, productWords);
+  const hasMarketSignal = marketWords.length > 0 && includesAny(bodyText, marketWords);
+  const hasCommercialIntent = includesAny(bodyText, commercialIntentWords);
+  const hasTrustSignal = includesAny(bodyText, trustWords);
+  const hasConversionSignal = page.hasContactSignal === true || includesAny(bodyText, conversionWords);
+  const hasGlobalSignal = includesAny(bodyText, globalMarketWords);
+
+  const titleText = String(page.title || '').trim();
+  const descriptionText = String(page.description || '').trim();
+  const h1Text = String(page.h1Text || '').trim();
+  const technical = page.technical || {};
+
+  const issues: ProfessionalIssue[] = checks.map((check: any) =>
+    buildProfessionalIssue(
+      check.item || 'SEO 检测项',
+      normalizeSeverity(check.status),
+      check.finding || '系统检测到该项存在优化空间。',
+      check.status === 'bad'
+        ? '该问题会削弱 Google 对页面主题、业务属性和采购意图的判断，也会影响海外买家对官网专业度的第一印象。'
+        : check.status === 'warning'
+          ? '该问题不一定立即造成流量损失，但会降低页面完整度、搜索相关性和后续询盘转化效率。'
+          : '该项基础表现可用，后续可围绕目标关键词和转化路径继续精细化提升。',
+      check.recommendation || '建议结合目标产品、目标市场和询盘路径进行系统优化，而不是只做单点标签修改。',
+      check.status === 'bad'
+        ? '修复后可提升页面主题清晰度、Google 抓取理解效率和询盘转化基础。'
+        : '优化后可增强页面稳定性、相关性和采购商信任。'
+    )
+  );
+
+  if (technical.homepageStatus && technical.homepageStatus !== 200) {
+    issues.push(buildProfessionalIssue(
+      '首页状态码异常',
+      'high',
+      `首页 HTTP 状态码为 ${technical.homepageStatus}，不是标准 200。`,
+      '首页状态码异常会影响 Google 抓取稳定性，也会让海外客户访问时遇到跳转、错误或加载失败。',
+      '建议检查服务器、CDN、防火墙和重定向链路，确保首页长期稳定返回 200。',
+      '提升 Google 抓取稳定性，减少自然流量和询盘入口损耗。'
+    ));
+  }
+
+  if (technical.usesHttps === false) {
+    issues.push(buildProfessionalIssue(
+      'HTTPS 安全信号不足',
+      'high',
+      '官网未使用 HTTPS 作为最终访问协议。',
+      '非 HTTPS 页面会削弱浏览器安全展示和海外采购商信任，也可能影响表单提交意愿。',
+      '建议部署 SSL 证书，并将所有 HTTP 页面 301 跳转到 HTTPS。',
+      '提升访问安全感、品牌可信度和表单转化基础。'
+    ));
+  }
+
+  if (technical.robotsTxt?.blocksAll) {
+    issues.push(buildProfessionalIssue(
+      'robots.txt 可能阻止全站抓取',
+      'high',
+      '检测到 robots.txt 中存在 Disallow: / 规则。',
+      '该规则可能导致 Google 无法抓取网站核心页面，严重影响收录和自然搜索曝光。',
+      '建议立即检查 robots.txt，移除对核心页面的全站屏蔽规则，并只屏蔽无 SEO 价值目录。',
+      '恢复搜索引擎抓取能力，为后续关键词排名建立基础。'
+    ));
+  } else if (technical.robotsTxt && technical.robotsTxt.exists === false) {
+    issues.push(buildProfessionalIssue(
+      'robots.txt 缺失或不可访问',
+      'medium',
+      `robots.txt 未能正常访问，状态码 ${technical.robotsTxt.status || '未知'}。`,
+      'robots.txt 缺失不一定会阻止收录，但会降低抓取管理和 Sitemap 声明的专业度。',
+      '建议创建 robots.txt，并在其中声明 sitemap.xml 地址。',
+      '帮助 Google 更清晰地理解可抓取范围和站点地图位置。'
+    ));
+  } else if (technical.robotsTxt && technical.robotsTxt.hasSitemap === false) {
+    issues.push(buildProfessionalIssue(
+      'robots.txt 未声明 Sitemap',
+      'medium',
+      'robots.txt 可访问，但未发现 Sitemap 声明。',
+      '缺少 Sitemap 声明会降低搜索引擎发现核心页面的效率，尤其不利于多产品、多页面的 B2B 官网。',
+      '建议在 robots.txt 中加入 Sitemap 地址，例如 Sitemap: https://domain.com/sitemap.xml。',
+      '提升核心页面被发现、抓取和索引的效率。'
+    ));
+  }
+
+  if (technical.sitemap && technical.sitemap.exists === false) {
+    issues.push(buildProfessionalIssue(
+      'sitemap.xml 缺失或不可访问',
+      'high',
+      `未检测到有效 sitemap.xml，状态码 ${technical.sitemap.status || '未知'}。`,
+      '没有站点地图会让 Google 更难系统发现产品页、案例页、FAQ 页和目标市场页面。',
+      '建议生成 sitemap.xml，并提交到 Google Search Console。',
+      '提升核心页面发现效率，为更多长尾关键词页面建立索引基础。'
+    ));
+  } else if (technical.sitemap && typeof technical.sitemap.urlCount === 'number' && technical.sitemap.urlCount > 0 && technical.sitemap.urlCount < 5) {
+    issues.push(buildProfessionalIssue(
+      'sitemap.xml 覆盖页面偏少',
+      'medium',
+      `sitemap.xml 中检测到约 ${technical.sitemap.urlCount} 个 URL。`,
+      'B2B 官网如果只有少量 URL，通常说明产品页、应用页、案例页和 FAQ 页布局不足，长尾关键词覆盖有限。',
+      '建议补充产品分类页、应用场景页、FAQ 页、案例页和联系页，并纳入 sitemap.xml。',
+      '扩大 Google 可发现页面数量，提高长尾关键词获客机会。'
+    ));
+  }
+
+  if (!titleText) {
+    issues.push(buildProfessionalIssue(
+      'Title 缺失',
+      'high',
+      '页面未检测到有效 Title。',
+      'Title 是 Google 搜索结果中最重要的主题入口，缺失会直接影响页面被理解和点击。',
+      `建议设置包含「${product}」、业务属性和目标市场的 Title，例如产品词 + supplier/manufacturer + market。`,
+      '提升搜索结果相关性、点击率和核心关键词承接能力。'
+    ));
+  } else {
+    const titleHasProduct = productWords.length === 0 || includesAny(titleText, productWords);
+    const titleHasIntent = includesAny(titleText, commercialIntentWords);
+
+    if (page.titleLength && (page.titleLength < 30 || page.titleLength > 65)) {
+      issues.push(buildProfessionalIssue(
+        'Title 长度与搜索展示不理想',
+        'medium',
+        `当前 Title 长度约 ${page.titleLength} 个字符。`,
+        'Title 过短会导致主题表达不足，过长则可能在 Google 搜索结果中被截断。',
+        `建议将 Title 控制在 30-65 字符，并前置核心产品词「${product}」。`,
+        '提升搜索结果点击率和页面主题匹配度。'
+      ));
+    }
+
+    if (!titleHasProduct || !titleHasIntent) {
+      issues.push(buildProfessionalIssue(
+        'Title 缺少 B2B 商业搜索意图',
+        'high',
+        `当前 Title 未充分体现产品词或 supplier / manufacturer / factory / exporter / quote 等商业意图。`,
+        'B2B 买家通常带着明确采购目的搜索。Title 不承接商业意图，会导致页面难以匹配高价值询盘词。',
+        `建议把 Title 从品牌展示型改为采购承接型，结构可参考「${product} Supplier / Manufacturer for ${market}」。`,
+        '提升高意图关键词覆盖能力，让 Google 更容易把页面匹配给采购型搜索。'
+      ));
+    }
+  }
+
+  if (!descriptionText) {
+    issues.push(buildProfessionalIssue(
+      'Meta Description 缺失',
+      'high',
+      '页面未检测到有效 Meta Description。',
+      'Meta Description 虽不是直接排名因素，但会影响搜索结果摘要、点击率和采购商第一判断。',
+      `建议补充包含产品、应用场景、供应能力、目标市场和询盘引导的描述。`,
+      '提升搜索结果点击率，并让潜在客户更快理解企业价值。'
+    ));
+  } else {
+    const descriptionHasConversion = includesAny(descriptionText, commercialIntentWords) || includesAny(descriptionText, conversionWords);
+    if (!descriptionHasConversion) {
+      issues.push(buildProfessionalIssue(
+        'Meta Description 缺少询盘转化信号',
+        'medium',
+        '当前 Description 更偏介绍，缺少 quote、inquiry、supplier、solution 等采购转化表达。',
+        '搜索摘要如果缺少采购利益点，可能无法吸引真正有需求的海外买家点击。',
+        '建议在 Description 中加入产品优势、服务市场、供应能力和明确 CTA，例如 Get Quote / Contact Us。',
+        '提高 Google 搜索结果点击率和询盘意图匹配度。'
+      ));
+    }
+  }
+
+  if (!h1Text) {
+    issues.push(buildProfessionalIssue(
+      'H1 主标题信号不足',
+      'high',
+      '页面未检测到明确 H1 主标题。',
+      'H1 是页面主题的核心结构信号，缺失会削弱 Google 对主营业务的判断。',
+      `建议设置一个清晰 H1，直接表达「${product}」和服务对象，而不是只写品牌口号。`,
+      '增强页面主题聚焦度，提升核心产品词的 SEO 基础。'
+    ));
+  } else if (productWords.length > 0 && !includesAny(h1Text, productWords)) {
+    issues.push(buildProfessionalIssue(
+      'H1 未明确承接主营产品',
+      'medium',
+      `当前 H1 未明显包含用户提交的主营产品「${product}」。`,
+      '首屏主标题如果没有表达主营产品，海外买家进入页面后需要额外判断网站是否匹配需求。',
+      '建议让 H1 直接表达核心产品、行业或解决方案，而不是泛泛介绍企业。',
+      '提高首屏理解效率和页面主题一致性。'
+    ));
+  }
+
+  if (!hasProductSignal) {
+    issues.push(buildProfessionalIssue(
+      '产品关键词覆盖不足',
+      'high',
+      `用户提交的主营产品/服务为「${product}」，但页面主体内容中相关表达不足。`,
+      'Google 难以确认官网与主营产品的强相关性，海外采购商也难以快速判断企业能提供什么。',
+      '在首页首屏、服务介绍、产品模块、案例模块和 FAQ 中自然加入核心产品词、应用场景词和采购意图词。',
+      '提升目标产品词排名基础，并提高客户进入页面后的理解效率。'
+    ));
+  }
+
+  if (!hasMarketSignal && !hasGlobalSignal) {
+    issues.push(buildProfessionalIssue(
+      '目标市场与出口信号不足',
+      'medium',
+      `用户提交的目标市场为「${market}」，但页面内容中缺少明显市场、出口或国际服务表达。`,
+      '如果页面没有目标市场、语言、地区、出口服务或国际交付信号，Google 和客户都难以判断服务匹配度。',
+      `建议增加面向「${market}」市场的服务描述、交付能力、案例、认证、物流或本地化表达。`,
+      '增强目标市场相关性，提高海外客户信任感。'
+    ));
+  }
+
+  if (!hasCommercialIntent) {
+    issues.push(buildProfessionalIssue(
+      '采购型关键词意图不足',
+      'high',
+      '页面内容中缺少 supplier、manufacturer、factory、quote、inquiry、solution 等 B2B 采购意图词。',
+      '只做公司介绍容易吸引低意图流量，难以承接正在寻找供应商的采购型搜索。',
+      '建议围绕“产品 + supplier/manufacturer/exporter/solution/quote”等方向重构首页和产品页文案。',
+      '提高高商业价值关键词覆盖率，让自然流量更接近真实询盘。'
+    ));
+  }
+
+  if (!hasTrustSignal) {
+    issues.push(buildProfessionalIssue(
+      '采购商信任背书不足',
+      'medium',
+      '页面中未明显检测到 About、Factory、Certificate、Case、FAQ、Quality 等信任内容。',
+      'B2B 采购商在提交询盘前通常会判断企业资质、生产能力、交付能力和过往案例。',
+      '建议增加公司实力、工厂能力、认证证书、案例、FAQ、质量控制和交付流程内容。',
+      '降低海外买家的信任门槛，提高询盘提交概率。'
+    ));
+  }
+
+  if (!hasConversionSignal) {
+    issues.push(buildProfessionalIssue(
+      '转化入口不明显',
+      'high',
+      '页面中未发现明显的联系、询盘、报价、表单、邮箱、电话或 WhatsApp 信号。',
+      '即使获得 Google 流量，客户也可能不知道下一步如何联系你，导致访问流量沉没。',
+      '建议在首屏、产品区、底部和悬浮按钮中设置明确 CTA，例如 Get Quote、Contact Us、Book a Call。',
+      '提升访问到询盘的转化率。'
+    ));
+  }
+
+  const issueFamilyKeyForDedupe = (issue: ProfessionalIssue) => {
+    const title = String(issue.title || '');
+    const evidence = String(issue.evidence || '');
+    const combined = `${title} ${evidence}`.toLowerCase();
+
+    if (/sitemap/i.test(combined) || /站点地图/.test(title)) return 'sitemap';
+    if (/robots\.txt/i.test(combined) || /robots 抓取/.test(title)) return 'robots';
+    if (/https/i.test(combined) || /安全/.test(title)) return 'https';
+    if (/http 状态|状态码/.test(title)) return 'homepage-status';
+    if (/title/i.test(combined) || /标题/.test(title)) return 'title';
+    if (/description/i.test(combined) || /描述/.test(title)) return 'description';
+    if (/h1/i.test(combined) || /主标题/.test(title)) return 'h1';
+    if (/询盘|转化|contact|quote|whatsapp|cta/i.test(combined)) return 'conversion';
+    if (/关键词|产品|市场|采购/i.test(combined)) return 'keyword';
+    return title.replace(/\s+/g, '').slice(0, 32);
+  };
+
+  const severityRankForDedupe = (severity: ProfessionalIssue['severity']) => {
+    if (severity === 'high') return 3;
+    if (severity === 'medium') return 2;
+    return 1;
+  };
+
+  const dedupedIssueMap = new Map<string, ProfessionalIssue>();
+
+  for (const issue of issues) {
+    const key = issueFamilyKeyForDedupe(issue);
+    const existing = dedupedIssueMap.get(key);
+
+    if (
+      !existing ||
+      severityRankForDedupe(issue.severity) > severityRankForDedupe(existing.severity) ||
+      (
+        severityRankForDedupe(issue.severity) === severityRankForDedupe(existing.severity) &&
+        issue.title.length > existing.title.length
+      )
+    ) {
+      dedupedIssueMap.set(key, issue);
+    }
+  }
+
+  issues.length = 0;
+  issues.push(...dedupedIssueMap.values());
+
+  const highPriorityCount = issues.filter((issue) => issue.severity === 'high').length;
+  const mediumPriorityCount = issues.filter((issue) => issue.severity === 'medium').length;
+
+  const rawScore = typeof report?.score === 'number'
+    ? report.score - highPriorityCount * 3 - mediumPriorityCount * 1
+    : 100 - highPriorityCount * 12 - mediumPriorityCount * 6;
+
+  const score = Math.max(35, Math.min(95, Math.round(rawScore)));
+  const hasSevereIndexBlocker = issues.some((issue) =>
+    issue.severity === 'high' &&
+    /robots\.txt 可能阻止全站抓取|首页状态码异常/i.test(issue.title)
+  );
+
+  const hasImportantSeoGap = issues.some((issue) =>
+    /sitemap\.xml 缺失|H1|Title 缺少|产品关键词覆盖不足/i.test(issue.title)
+  );
+
+  const riskLevel =
+    score < 60 || hasSevereIndexBlocker
+      ? '高风险'
+      : score < 80 || highPriorityCount >= 3 || hasImportantSeoGap
+        ? '中风险'
+        : '低风险';
+  const estimatedFixCycle = highPriorityCount >= 4 ? '3-6 周' : highPriorityCount >= 2 ? '2-4 周' : highPriorityCount >= 1 ? '1-2 周' : '3-7 天';
+
+  const sectionOf = (title: string, summary: string, matcher: (issue: ProfessionalIssue) => boolean): ProfessionalSection => ({
+    title,
+    summary,
+    issues: issues.filter(matcher)
+  });
+
+  const priorityFamilyKey = (issue: ProfessionalIssue) => {
+    const title = String(issue.title || '');
+    const combined = `${issue.title} ${issue.evidence}`.toLowerCase();
+
+    if (/sitemap/i.test(combined) || /站点地图/.test(title)) return 'sitemap';
+    if (/h1/i.test(combined) || /主标题/.test(title)) return 'h1';
+    if (/title/i.test(combined) || /标题/.test(title)) return 'title';
+    if (/产品关键词覆盖不足|产品关键词|核心产品|主营产品/i.test(combined)) return 'product-keyword';
+    if (/采购型关键词|商业搜索意图|supplier|manufacturer|factory|quote|inquiry/i.test(combined)) return 'purchase-intent';
+    if (/robots\.txt/i.test(combined) || /robots 抓取/.test(title)) return 'robots';
+    if (/询盘|转化|contact|quote|whatsapp|cta/i.test(combined)) return 'conversion';
+    if (/description/i.test(combined) || /描述/.test(title)) return 'description';
+    if (/http 状态|状态码/.test(title)) return 'homepage-status';
+    if (/https/i.test(combined) || /安全/.test(title)) return 'https';
+    if (/canonical/i.test(combined)) return 'canonical';
+    if (/alt|图片/i.test(combined)) return 'image-alt';
+
+    return title.replace(/\s+/g, '').slice(0, 32);
+  };
+
+  const priorityFamilyRank = (family: string) => {
+    const order: Record<string, number> = {
+      sitemap: 100,
+      h1: 98,
+      title: 96,
+      'product-keyword': 94,
+      'purchase-intent': 92,
+      robots: 80,
+      conversion: 76,
+      description: 72,
+      'homepage-status': 70,
+      https: 68,
+      canonical: 55,
+      'image-alt': 45
+    };
+
+    return order[family] || 10;
+  };
+
+  const priorityIssues = (() => {
+    const map = new Map<string, ProfessionalIssue>();
+
+    for (const issue of issues) {
+      if (/整体 SEO 诊断结论|暂无严重问题|基础表现可用/i.test(issue.title)) continue;
+
+      const family = priorityFamilyKey(issue);
+      const existing = map.get(family);
+
+      if (!existing || issue.severity === 'high' && existing.severity !== 'high') {
+        map.set(family, issue);
+      }
+    }
+
+    const preferredFamilies = [
+      'sitemap',
+      'h1',
+      'title',
+      'product-keyword',
+      'purchase-intent',
+      'robots',
+      'conversion',
+      'description',
+      'homepage-status',
+      'https',
+      'canonical',
+      'image-alt'
+    ];
+
+    const picked: ProfessionalIssue[] = [];
+
+    for (const family of preferredFamilies) {
+      const issue = map.get(family);
+      if (issue && picked.length < 6) {
+        picked.push(issue);
+      }
+    }
+
+    if (picked.length < 6) {
+      const remaining = [...map.values()]
+        .filter((issue) => !picked.includes(issue))
+        .sort((a, b) => {
+          const severityRank = (severity: ProfessionalIssue['severity']) =>
+            severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
+
+          const priorityDiff =
+            priorityFamilyRank(priorityFamilyKey(b)) -
+            priorityFamilyRank(priorityFamilyKey(a));
+
+          if (priorityDiff !== 0) return priorityDiff;
+
+          return severityRank(b.severity) - severityRank(a.severity);
+        });
+
+      picked.push(...remaining.slice(0, 6 - picked.length));
+    }
+
+    return picked;
+  })();
+
+  const sections: ProfessionalSection[] = [
+    {
+      title: '执行摘要',
+      summary: `${company} 当前官网 SEO 综合评分为 ${score}/100，风险等级为${riskLevel}。系统共发现 ${issues.length} 个可优化问题，其中高优先级 ${highPriorityCount} 个。结合主营产品「${product}」、目标市场「${market}」和当前问题「${problem}」来看，当前优化重点不是单纯修改标签，而是建立“Google 搜索曝光 → 专业页面承接 → 信任建立 → 询盘提交”的完整 B2B 获客路径。`,
+      issues: [
+        buildProfessionalIssue(
+          '整体 SEO 诊断结论',
+          riskLevel === '高风险' ? 'high' : riskLevel === '中风险' ? 'medium' : 'low',
+          `综合评分 ${score}/100；高优先级问题 ${highPriorityCount} 个；目标市场：${market || '未填写'}；主营产品：${product || '未填写'}。`,
+          '这会影响 Google 对官网主题、市场定位、产品能力和转化路径的判断，也会影响海外采购商对企业专业度的信任。',
+          '建议先处理影响收录、主题识别和询盘入口的高优先级问题，再围绕产品词、市场词和采购意图词搭建内容矩阵。',
+          '形成更清晰的搜索入口、更强的采购信任和更完整的线索转化路径。'
+        )
+      ]
+    },
+    sectionOf('技术 SEO', '检查影响抓取、索引、移动端体验和页面基础识别的技术项。', (i) =>
+      /title|meta|canonical|robots|viewport|alt|移动|图片|description|schema|结构化/i.test(i.title + i.evidence)
+    ),
+    sectionOf('页面结构', '检查 H1/H2/H3、页面层级、内链和内容组织方式，判断页面是否能让 Google 和买家快速理解主营业务。', (i) =>
+      /h1|h2|h3|结构|内链|标题|heading|首屏/i.test(i.title + i.evidence)
+    ),
+    sectionOf('内容与关键词', '检查产品词、目标市场词、采购意图词、价值主张和正文完整度。', (i) =>
+      /关键词|产品|市场|内容|正文|description|Title 长度|采购|商业搜索|出口/i.test(i.title + i.evidence)
+    ),
+    sectionOf('转化线索', '检查 CTA、联系入口、询盘路径和销售线索信号，判断 SEO 流量能否转化为商机。', (i) =>
+      /转化|联系|询盘|报价|表单|邮箱|电话|whatsapp|cta|quote|contact/i.test(i.title + i.evidence)
+    ),
+    {
+      title: '竞争与增长机会',
+      summary: `围绕「${product}」和「${market}」市场，后续 SEO 增长不应只依赖首页，而应建设产品页、应用场景页、FAQ、案例页和目标市场页面。`,
+      issues: [
+        buildProfessionalIssue(
+          '关键词与落地页增长机会',
+          'medium',
+          `主营产品/服务：${product || '未填写'}；目标市场：${market || '未填写'}。`,
+          '如果只优化首页，难以覆盖海外买家的多层搜索意图，例如找供应商、查参数、比价格、看认证、确认交付能力。',
+          `建议围绕「${product || '核心产品'} + supplier / manufacturer / solution / price / application / ${market || 'target market'}」建设产品页、场景页、FAQ 页和案例页。`,
+          '扩大长尾关键词覆盖，提高精准询盘来源，并逐步降低对广告流量的依赖。'
+        )
+      ]
+    },
+    {
+      title: '优先级行动计划',
+      summary: `建议按照 ${estimatedFixCycle} 的周期推进第一轮修复：先处理高优先级问题，再扩展关键词页面和内容资产。`,
+      issues: priorityIssues.map((issue) => buildProfessionalIssue(
+        `优先处理：${issue.title}`,
+        issue.severity,
+        issue.evidence,
+        issue.impact,
+        issue.recommendation,
+        issue.expectedBenefit
+      ))
+    }
+  ].map((section) => ({
+    ...section,
+    issues: section.issues.length ? section.issues : [
+      buildProfessionalIssue(
+        `${section.title} 暂无严重问题`,
+        'low',
+        '当前检测中未发现该分区的明显高风险问题。',
+        '该分区基础表现可用，但仍建议后续结合真实页面、Google Search Console 和竞品继续人工复核。',
+        '保持现有基础，并在后续 SEO 执行中持续优化。',
+        '维持页面稳定性，并为后续增长打基础。'
+      )
+    ]
+  }));
+
+  return {
+    ...report,
+    score,
+    summary: `专业诊断完成：最终评分 ${score}/100，风险等级为${riskLevel}，共发现 ${issues.length} 个可优化问题，其中高优先级 ${highPriorityCount} 个。建议按照 ${estimatedFixCycle} 完成第一轮修复。`,
+    riskLevel,
+    issueCount: issues.length,
+    highPriorityCount,
+    estimatedFixCycle,
+    executiveSummary: sections[0].summary.replace(`风险等级为${riskLevel}`, `风险等级为${riskLevel}`).replace(/评分为 \d+\/100/, `评分为 ${score}/100`),
+    diagnosisPositioning: 'B2B Google SEO 获客诊断',
+    searchIntentAnalysis: hasCommercialIntent
+      ? '页面已具备部分采购型搜索意图，但仍建议围绕 supplier、manufacturer、solution、quote 等高意图词继续强化。'
+      : '页面采购型搜索意图不足，建议从展示型官网升级为可承接 Google 询盘的销售型页面。',
+    b2bConversionInsight: hasConversionSignal
+      ? '页面已具备基础联系或询盘信号，后续应进一步优化 CTA 位置、表单阻力、信任背书和首屏行动路径。'
+      : '页面转化入口不明显，SEO 流量进入后可能无法顺利转化为询盘。建议优先补充 Contact、Quote、Inquiry、WhatsApp 或表单入口。',
+    googleGrowthOpportunity: `围绕「${product}」和「${market}」建设产品页、应用页、FAQ 和案例页，可逐步扩大长尾关键词覆盖并提升精准询盘来源。`,
+    recommendedServicePath: riskLevel === '高风险'
+      ? '建议先做 3-6 周 SEO 基础修复与首页重构，再进入关键词页面建设。'
+      : riskLevel === '中风险'
+        ? '建议先做 2-4 周首页 SEO 和转化路径优化，再扩展产品与场景页面。'
+        : '建议在现有基础上继续扩展长尾关键词页面和内容增长计划。',
+    sections,
+    checks
+  };
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as LeadPayload;
+
+    for (const field of requiredFields) {
+      if (!body[field] || String(body[field]).trim().length === 0) {
+        return NextResponse.json({ message: '请填写所有必填字段。' }, { status: 400 });
+      }
+    }
+
+    if (!isValidUrl(String(body.website))) {
+      return NextResponse.json({ message: '官网链接格式不正确。' }, { status: 400 });
+    }
+
+    if (!isValidEmail(String(body.email))) {
+      return NextResponse.json({ message: '邮箱格式不正确。' }, { status: 400 });
+    }
+
+    const report = upgradeSeoReportForProfessionalView(await generateSeoReport(String(body.website).trim()), body);
+
+    const baseLead: Omit<Lead, 'followup'> = {
+      submittedAt: new Date().toISOString(),
+      status: '新提交',
+      company: String(body.company).trim(),
+      website: String(body.website).trim(),
+      product: String(body.product).trim(),
+      market: String(body.market).trim(),
+      problem: String(body.problem).trim(),
+      contactName: String(body.contactName).trim(),
+      email: String(body.email).trim(),
+      messenger: body.messenger ? String(body.messenger).trim() : '',
+      note: body.note ? String(body.note).trim() : '',
+      report
+    };
+
+    const lead: Lead = {
+      ...baseLead,
+      followup: generateFollowupPackage(baseLead)
+    };
+
+    const dataDir = path.join(process.cwd(), 'data');
+    await fs.mkdir(dataDir, { recursive: true });
+    await fs.appendFile(path.join(dataDir, 'leads.jsonl'), `${JSON.stringify(lead)}\n`, 'utf8');
+
+    try {
+      await sendLeadNotification(lead);
+    } catch (emailError) {
+      console.error('Failed to send lead notification email:', emailError);
+    }
+
+    return NextResponse.json({ ok: true, message: '提交成功。' });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: '服务器处理失败，请稍后再试。' }, { status: 500 });
+  }
+}

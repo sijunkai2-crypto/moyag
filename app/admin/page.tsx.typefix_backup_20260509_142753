@@ -29,30 +29,13 @@ type Lead = {
     status?: string;
     generatedAt?: string;
     summary?: string;
-    executiveSummary?: string;
     score?: number;
-    riskLevel?: string;
-    issueCount?: number;
-    highPriorityCount?: number;
-    estimatedFixCycle?: string;
-    checks?: {
+    checks?: Array<{
       item?: string;
       status?: string;
       finding?: string;
       recommendation?: string;
-    }[];
-    sections?: {
-      title?: string;
-      summary?: string;
-      issues?: {
-        title?: string;
-        severity?: string;
-        evidence?: string;
-        impact?: string;
-        recommendation?: string;
-        expectedBenefit?: string;
-      }[];
-    }[];
+    }>;
     page?: Record<string, unknown>;
   };
   followup?: {
@@ -191,10 +174,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
                       {report && (() => {
                         const sections = Array.isArray(report?.sections) ? report.sections : [];
-                        const scoreValue = typeof report?.score === 'number' ? report.score : 0;
-                  const riskLevel = text(report?.riskLevel, scoreValue >= 80 ? '低风险' : scoreValue >= 60 ? '中风险' : '高风险');
-                        const issueCount = String(report?.issueCount ?? checks.length);
-                        const highPriorityCount = String(report?.highPriorityCount ?? checks.filter((c) => text(c.status, '') === 'bad').length);
+                        const riskLevel = text(report?.riskLevel, report?.score >= 80 ? '低风险' : report?.score >= 60 ? '中风险' : '高风险');
+                        const issueCount = text(report?.issueCount, checks.length);
+                        const highPriorityCount = text(report?.highPriorityCount, checks.filter((c) => text(c.status, '') === 'bad').length);
                         const estimatedFixCycle = text(report?.estimatedFixCycle, '待评估');
 
                         return (

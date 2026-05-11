@@ -1,0 +1,136 @@
+export default function Home() {
+  return (
+    <main className="min-h-screen bg-slate-950 text-white">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,#2563eb55,transparent_35%),radial-gradient(circle_at_bottom_right,#14b8a655,transparent_35%)]" />
+        <div className="relative mx-auto max-w-6xl px-6 py-20 lg:py-28">
+          <div className="max-w-3xl">
+            <p className="mb-4 inline-flex rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-200">
+              Moyag AI · Google SEO Growth System
+            </p>
+            <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
+              帮出海企业把官网变成稳定获客机器
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-slate-300 md:text-xl">
+              我们为 B2B、SaaS、AI 工具、跨境服务商提供 Google SEO 策略、关键词布局、内容体系、技术优化与线索转化页面建设。不是堆文章，而是建立可持续增长的搜索流量资产。
+            </p>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <a
+                href="#contact"
+                className="rounded-xl bg-cyan-400 px-6 py-3 text-center font-semibold text-slate-950 hover:bg-cyan-300"
+              >
+                获取 SEO 诊断
+              </a>
+              <a
+                href="#services"
+                className="rounded-xl border border-white/20 px-6 py-3 text-center font-semibold text-white hover:bg-white/10"
+              >
+                查看服务内容
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-white/10 bg-white/5">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-6 py-10 md:grid-cols-4">
+          {[
+            ["关键词策略", "搜索意图 + 商业价值"],
+            ["技术 SEO", "速度、结构、索引优化"],
+            ["内容增长", "Topic Cluster 内容矩阵"],
+            ["线索转化", "表单、CTA、落地页优化"],
+          ].map(([title, desc]) => (
+            <div key={title}>
+              <h3 className="text-lg font-semibold">{title}</h3>
+              <p className="mt-2 text-sm text-slate-400">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="services" className="mx-auto max-w-6xl px-6 py-20">
+        <div className="max-w-2xl">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">Services</p>
+          <h2 className="mt-3 text-3xl font-bold md:text-4xl">我们提供什么服务</h2>
+          <p className="mt-4 text-slate-300">
+            适合想用 Google 获得海外客户、询盘、Demo 预约、咨询线索的企业。
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {[
+            {
+              title: "SEO 战略诊断",
+              text: "分析网站现状、竞品流量、关键词机会、页面结构和索引问题，输出可执行优化路线图。",
+            },
+            {
+              title: "关键词与内容矩阵",
+              text: "围绕核心业务建立关键词分层，覆盖产品词、场景词、问题词、对比词和转化词。",
+            },
+            {
+              title: "官网落地页优化",
+              text: "重构首页、服务页、案例页和表单路径，让搜索流量进入后能产生有效线索。",
+            },
+            {
+              title: "技术 SEO 修复",
+              text: "处理标题、描述、语义结构、站点地图、robots、速度、移动端和结构化数据。",
+            },
+            {
+              title: "英文内容生产",
+              text: "基于搜索意图写作博客、指南、行业页和解决方案页，避免无效 AI 堆文。",
+            },
+            {
+              title: "数据追踪与迭代",
+              text: "接入 Search Console、GA4、转化事件，按月复盘排名、点击、收录和线索质量。",
+            },
+          ].map((item) => (
+            <div key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+              <h3 className="text-xl font-semibold">{item.title}</h3>
+              <p className="mt-4 leading-7 text-slate-300">{item.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-slate-900/70">
+        <div className="mx-auto max-w-6xl px-6 py-20">
+          <div className="grid gap-10 md:grid-cols-2 md:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">Method</p>
+              <h2 className="mt-3 text-3xl font-bold md:text-4xl">我们的 SEO 方法论</h2>
+              <p className="mt-5 leading-8 text-slate-300">
+                SEO 不是玄学许愿池。我们把它拆成四层：技术可被收录、内容可被理解、页面可被点击、路径可被转化。
+              </p>
+            </div>
+            <div className="space-y-4">
+              {[
+                "第 1 步：确定业务目标与高价值关键词",
+                "第 2 步：修复网站结构、速度和索引问题",
+                "第 3 步：建设服务页、行业页、案例页和内容集群",
+                "第 4 步：用数据持续优化排名、点击率和询盘率",
+              ].map((step) => (
+                <div key={step} className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-slate-200">
+                  {step}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" className="mx-auto max-w-6xl px-6 py-20">
+        <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/10 p-8 md:p-12">
+          <h2 className="text-3xl font-bold md:text-4xl">想知道你的网站还有多少 SEO 增长空间？</h2>
+          <p className="mt-4 max-w-2xl leading-8 text-slate-300">
+            把官网、目标市场和主营业务发给我们，我们会从关键词、页面、技术和转化四个角度给出初步诊断。
+          </p>
+          <div className="mt-8 rounded-2xl bg-slate-950/70 p-6">
+            <p className="text-lg font-semibold">联系方式</p>
+            <p className="mt-3 text-slate-300">Email：contact@moyag-ai.com</p>
+            <p className="mt-2 text-slate-300">Website：www.moyag-ai.com</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

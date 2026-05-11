@@ -191,10 +191,9 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
                       {report && (() => {
                         const sections = Array.isArray(report?.sections) ? report.sections : [];
-                        const scoreValue = typeof report?.score === 'number' ? report.score : 0;
-                  const riskLevel = text(report?.riskLevel, scoreValue >= 80 ? '低风险' : scoreValue >= 60 ? '中风险' : '高风险');
-                        const issueCount = String(report?.issueCount ?? checks.length);
-                        const highPriorityCount = String(report?.highPriorityCount ?? checks.filter((c) => text(c.status, '') === 'bad').length);
+                        const riskLevel = text(report?.riskLevel, report?.score >= 80 ? '低风险' : report?.score >= 60 ? '中风险' : '高风险');
+                        const issueCount = text(report?.issueCount, checks.length);
+                        const highPriorityCount = text(report?.highPriorityCount, checks.filter((c) => text(c.status, '') === 'bad').length);
                         const estimatedFixCycle = text(report?.estimatedFixCycle, '待评估');
 
                         return (
