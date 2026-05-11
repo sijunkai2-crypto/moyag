@@ -70,7 +70,8 @@ const paidPlans = [
 ];
 
 const contactInfo = {
-  phone: '17667442919'
+  phone: '17667442919',
+  whatsapp: '+86 18842600869'
 };
 
 export default function HomePage() {
@@ -274,8 +275,9 @@ export default function HomePage() {
             </div>
             <div className="v27ContactList">
               <span>客服微信 / 电话：{contactInfo.phone}</span>
+              <span>WhatsApp：{contactInfo.whatsapp}</span>
               <a className="v27ContactBtn" href={`tel:${contactInfo.phone}`}>立即电话咨询</a>
-              <span>添加微信时请备注：SEO Agent</span>
+              <span>添加微信或 WhatsApp 时请备注：SEO Agent</span>
             </div>
           </div>
         </div>
