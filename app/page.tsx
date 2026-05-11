@@ -54,6 +54,25 @@ const audiences = [
   '准备升级英文官网的团队'
 ];
 
+const paidPlans = [
+  {
+    name: '基础 SEO 检测报告',
+    price: '¥50',
+    desc: '适合想快速了解官网 SEO 基础问题的企业。',
+    features: ['SEO 综合评分', '风险等级判断', '基础问题清单', '初步优化方向']
+  },
+  {
+    name: '进阶 SEO 获客诊断',
+    price: '¥100',
+    desc: '适合希望获得更完整优化优先级和转化建议的企业。',
+    features: ['完整诊断摘要', '高优先级问题', '预计修复周期', '后续优化建议']
+  }
+];
+
+const contactInfo = {
+  phone: '17667442919'
+};
+
 export default function HomePage() {
   return (
     <main className="v27Page">
@@ -76,9 +95,9 @@ export default function HomePage() {
         <div className="v27Container v27HeroGrid">
           <div className="v27HeroCopy">
             <p className="v27Eyebrow">Google SEO Audit · B2B Lead Generation</p>
-            <h1>把你的官网，变成能被 Google 找到的获客入口</h1>
+            <h1>检测你的官网 SEO 获客潜力</h1>
             <p className="v27HeroText">
-              Moyag AI SEO 为出海企业提供官网 SEO 初步诊断。输入官网地址，系统将生成专业报告摘要，识别技术 SEO、内容结构、收录风险与询盘转化短板。
+              输入官网地址，系统将生成专业 SEO 初步诊断，帮助你识别 Google 收录、技术 SEO、内容结构与询盘转化问题。
             </p>
 
             <div className="v27HeroActions">
@@ -87,7 +106,6 @@ export default function HomePage() {
             </div>
 
             <div className="v27TrustRow">
-              <span>1 分钟提交</span>
               <span>专业 SEO 摘要</span>
               <span>风险等级判断</span>
               <span>高优先级问题识别</span>
@@ -97,33 +115,30 @@ export default function HomePage() {
           <aside className="v27ReportPreview">
             <div className="v27PreviewTop">
               <p>SEO Report Preview</p>
-              <strong>Risk Level: Medium</strong>
+              <strong>提交后生成专属结果</strong>
             </div>
 
             <div className="v27ScoreCard">
-              <span>SEO Score</span>
-              <b>72</b>
-              <em>/ 100</em>
+              <span>SEO 综合评分</span>
+              <b>待检测</b>
+              <em></em>
             </div>
 
             <div className="v27MiniList">
               <div>
-                <span>Technical SEO</span>
-                <b>需要优化</b>
+                <span>风险等级判断</span>
+                <b>自动识别</b>
               </div>
               <div>
-                <span>Content Structure</span>
-                <b>存在缺口</b>
+                <span>问题数量统计</span>
+                <b>报告展示</b>
               </div>
               <div>
-                <span>Conversion Path</span>
-                <b>建议增强</b>
+                <span>优先级行动计划</span>
+                <b>提交后生成</b>
               </div>
             </div>
 
-            <p className="v27PreviewNote">
-              报告会同步保存到后台线索系统，便于后续跟进客户。
-            </p>
           </aside>
         </div>
       </section>
@@ -221,13 +236,58 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="v27Section v27PaidSection" id="pricing">
+        <div className="v27Container">
+          <div className="v27SectionHead">
+            <p className="v27Eyebrow">Paid SEO Audit</p>
+            <h2>付费获取你的专属 SEO 检测报告</h2>
+            <p>
+              你可以先提交官网信息。若需要获取正式检测报告，可选择基础版或进阶版。后续我也可以根据报告结果，继续提供更专业的 Google SEO 优化 Agent 与执行方案。
+            </p>
+          </div>
+
+          <div className="v27PricingGrid">
+            {paidPlans.map((plan) => (
+              <article className="v27PriceCard" key={plan.name}>
+                <div>
+                  <p>{plan.name}</p>
+                  <strong>{plan.price}</strong>
+                  <span>{plan.desc}</span>
+                </div>
+                <ul>
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
+                </ul>
+                <a className="v27PayBtn" href="#audit-form">提交官网并获取报告</a>
+              </article>
+            ))}
+          </div>
+
+          <div className="v27ContactBox">
+            <div>
+              <p className="v27Eyebrow">SEO Agent Service</p>
+              <h3>需要 SEO 优化 Agent？请联系客服</h3>
+              <p>
+                检测报告可以帮你发现官网 SEO 问题。如果你需要进一步做 Google 关键词策略、页面结构优化、内容体系建设、技术 SEO 修复，或者搭建自动化 SEO 优化 Agent，可以直接联系客服获取更专业的优化建议。
+              </p>
+            </div>
+            <div className="v27ContactList">
+              <span>客服微信 / 电话：{contactInfo.phone}</span>
+              <a className="v27ContactBtn" href={`tel:${contactInfo.phone}`}>立即电话咨询</a>
+              <span>添加微信时请备注：SEO Agent</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="v27FormSection" id="audit-form">
         <div className="v27Container v27FormGrid">
           <div className="v27FormCopy">
             <p className="v27Eyebrow">Free SEO Audit</p>
-            <h2>提交官网，获取初步 SEO 诊断</h2>
+            <h2>提交官网，生成 SEO 检测线索</h2>
             <p>
-              填写公司、官网、主营产品和目标市场后，系统会抓取首页并生成专业 SEO 初步报告。表单提交、后台线索、邮件通知和报告生成逻辑保持不变。
+              填写公司、官网、主营产品和目标市场后，系统会抓取首页并生成 SEO 初步诊断。若已完成付费，我们会根据报告内容继续联系你。
             </p>
             <ul>
               <li>识别 Google 收录与技术 SEO 风险</li>
