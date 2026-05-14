@@ -4,65 +4,81 @@ import { FormEvent, useState } from 'react';
 
 type SubmitState = 'idle' | 'loading' | 'success' | 'error';
 
+type AiReport = {
+  score: number;
+  riskLevel: string;
+  issueCount: number;
+  highPriorityCount: number;
+  executiveSummary: string;
+  sections: Array<{ title: string; summary: string; items: string[] }>;
+  roadmap: { day7: string[]; day30: string[]; day90: string[] };
+};
+
 export default function SeoAuditForm() {
   const [status, setStatus] = useState<SubmitState>('idle');
   const [message, setMessage] = useState('');
+  const [report, setReport] = useState<AiReport | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus('loading');
     setMessage('');
+    setReport(null);
 
     const form = event.currentTarget;
-    const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries());
+    const fd = new FormData(form);
+    const payload = {
+      companyName: fd.get('company'),
+      url: fd.get('website'),
+      industry: fd.get('product'),
+      targetMarket: fd.get('market'),
+      contactName: fd.get('contactName'),
+      email: fd.get('email'),
+      phone: fd.get('messenger')
+    };
 
     try {
-      const response = await fetch('/api/leads', {
+      const response = await fetch('/api/ai-seo-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || '提交失败，请稍后再试。');
-
+      setReport(data.aiReport);
       setStatus('success');
-      setMessage('提交成功。我们已收到你的官网信息，会尽快进行初步诊断并联系你。');
-      form.reset();
+      setMessage('检测完成，已生成 AI SEO 报告。');
     } catch (error) {
       setStatus('error');
       setMessage(error instanceof Error ? error.message : '提交失败，请稍后再试。');
     }
   }
 
-  return (
+  return (<>
     <form className="auditForm" onSubmit={handleSubmit}>
-      <label>公司名称<input name="company" required placeholder="例如：Moyag AI" /></label>
+      <label>公司名称<input name="company" required /></label>
       <label>官网链接<input name="website" required type="url" placeholder="https://example.com" /></label>
-      <label>主营产品 / 服务<input name="product" required placeholder="例如：industrial parts, packaging machines" /></label>
-      <label>目标市场<input name="market" required placeholder="例如：United States / Europe / Middle East" /></label>
-      <label>当前主要问题
-        <select name="problem" required defaultValue="">
-          <option value="" disabled>请选择一个问题</option>
-          <option>Google 搜不到</option>
-          <option>官网没有流量</option>
-          <option>有流量但没有询盘</option>
-          <option>英文内容不专业</option>
-          <option>不知道关键词怎么做</option>
-          <option>想优化产品页</option>
-          <option>想提升海外买家信任</option>
-          <option>其他</option>
-        </select>
-      </label>
-      <label>联系人<input name="contactName" required placeholder="你的姓名" /></label>
-      <label>邮箱<input name="email" required type="email" placeholder="name@company.com" /></label>
+      <label>主营产品 / 服务<input name="product" required /></label>
+      <label>目标市场<input name="market" required /></label>
+      <label>联系人<input name="contactName" required /></label>
+      <label>邮箱<input name="email" required type="email" /></label>
       <label>WhatsApp / 微信<input name="messenger" placeholder="可选" /></label>
-      <label className="full">补充说明<textarea name="note" rows={4} placeholder="可以简单描述你的官网现状或目标客户。" /></label>
-      <button className="submitBtn" disabled={status === 'loading'} type="submit">
-        {status === 'loading' ? '提交中...' : '提交官网检测'}
-      </button>
+      <button className="submitBtn" disabled={status === 'loading'} type="submit">{status === 'loading' ? 'AI 检测中...' : '提交官网检测'}</button>
       {message && <p className={`formMessage ${status}`}>{message}</p>}
     </form>
-  );
+
+    {report && (
+      <section className="reportBox" style={{ marginTop: 24 }}>
+        <h3>AI SEO 诊断报告（中文）</h3>
+        <p><b>总分：</b>{report.score} / 100 ｜ <b>风险等级：</b>{report.riskLevel}</p>
+        <p><b>核心问题：</b>{report.issueCount} 项（高优先级 {report.highPriorityCount} 项）</p>
+        <p>{report.executiveSummary}</p>
+        {report.sections.map((s) => <div key={s.title}><h4>{s.title}</h4><p>{s.summary}</p><ul>{s.items.map((i) => <li key={i}>{i}</li>)}</ul></div>)}
+        <h4>7 / 30 / 90 天执行计划</h4>
+        <p><b>7 天：</b>{report.roadmap.day7.join('；')}</p>
+        <p><b>30 天：</b>{report.roadmap.day30.join('；')}</p>
+        <p><b>90 天：</b>{report.roadmap.day90.join('；')}</p>
+      </section>
+    )}
+  </>);
 }
