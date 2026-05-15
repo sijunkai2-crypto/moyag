@@ -1,306 +1,43 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import FeatureTabs from './components/FeatureTabs';
+import SeoToolCards from './components/SeoToolCards';
 import SeoAuditForm from './seo-audit-form';
 
-const painPoints = [
-  {
-    title: 'Google 搜不到你的官网',
-    desc: '网站上线了，但搜索品牌词、产品词、应用场景词都很难被 Google 正确识别。'
-  },
-  {
-    title: '有页面，但没有询盘',
-    desc: '页面看起来完整，却缺少买家信任、关键词布局、CTA 路径和转化触点。'
-  },
-  {
-    title: '不知道先改哪里',
-    desc: 'Title、Meta、H1、Robots、Sitemap、内容结构、收录风险混在一起，很难判断优先级。'
-  }
-];
-
-const reportFeatures = [
-  'SEO 综合评分',
-  '风险等级判断',
-  '执行摘要',
-  '技术 SEO 检查',
-  '内容与关键词建议',
-  '转化路径诊断',
-  '高优先级问题',
-  '预计修复周期',
-  '优先级行动计划'
-];
-
-const process = [
-  {
-    step: '01',
-    title: '提交官网信息',
-    desc: '填写官网、产品、目标市场和当前主要问题。'
-  },
-  {
-    step: '02',
-    title: '系统生成初步诊断',
-    desc: '自动分析首页基础 SEO、页面结构、收录风险和转化线索。'
-  },
-  {
-    step: '03',
-    title: '获得专业报告摘要',
-    desc: '输出风险等级、问题数量、高优先级事项和后续优化建议。'
-  }
-];
-
-const audiences = [
-  'B2B 外贸企业',
-  '工业品 / 制造业官网',
-  'SaaS / AI 工具产品',
-  '跨境服务商',
-  '想做 Google 获客的品牌官网',
-  '准备升级英文官网的团队'
-];
-
-const paidPlans = [
-  {
-    name: '基础 SEO 检测报告',
-    price: '¥50',
-    desc: '适合想快速了解官网 SEO 基础问题的企业。',
-    features: ['SEO 综合评分', '风险等级判断', '基础问题清单', '初步优化方向']
-  },
-  {
-    name: '进阶 SEO 获客诊断',
-    price: '¥100',
-    desc: '适合希望获得更完整优化优先级和转化建议的企业。',
-    features: ['完整诊断摘要', '高优先级问题', '预计修复周期', '后续优化建议']
-  }
-];
-
-const contactInfo = {
-  phone: '17667442919',
-  whatsapp: '+86 18842600869'
-};
+const trustTags = ['B2B Manufacturing', 'Cross-border SaaS', 'Google SEO', 'Alibaba.com', 'Made-in-China', 'Amazon'];
 
 export default function HomePage() {
+  const [domain, setDomain] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [email, setEmail] = useState('');
+  const preview = useMemo(() => {
+    const seed = (domain || 'example.com').replace(/^https?:\/\//, '').length;
+    return { score: 86, traffic: `+${160 + seed}%`, kw: `${(3 + (seed % 3))}.${seed % 10}K`, issues: 4 + (seed % 8), ranked: `${2 + (seed % 3)}.${seed % 9}K` };
+  }, [domain]);
+  const runDemo = () => { setLoading(true); setTimeout(() => setLoading(false), 980); };
+
   return (
-    <main className="v27Page">
-      <header className="v27Nav">
-        <div className="v27Container v27NavInner">
-          <a className="v27Brand" href="#">
-            <span>M</span>
-            Moyag AI SEO
-          </a>
-          <nav>
-            <a href="#value">服务价值</a>
-            <a href="#report">报告内容</a>
-            <a href="#process">流程</a>
-            <a href="#audit-form">免费检测</a>
-          </nav>
-        </div>
-      </header>
+    <main className="hpv32Home">
+      <header className="hpv32NavWrap"><div className="hpv32Container hpv32Nav"><a href="#" className="hpv32Logo">Moyag AI</a><nav><a href="#why">Why Moyag</a><a href="#features">Features</a><a href="#seo-tools">SEO Tools</a><a href="#case">Case Studies</a><a href="#pricing">Pricing</a><a href="#resources">Resources</a></nav><div className="hpv32NavBtns"><button className="hpv32LightBtn">EN</button><button className="hpv32LightBtn">Login</button><button className="hpv32MainBtn" onClick={() => document.getElementById('audit-form')?.scrollIntoView({ behavior: 'smooth' })}>Get My Report</button></div></div></header>
 
-      <section className="v27Hero">
-        <div className="v27Container v27HeroGrid">
-          <div className="v27HeroCopy">
-            <p className="v27Eyebrow">Google SEO Audit · B2B Lead Generation</p>
-            <h1>检测你的官网 SEO 获客潜力</h1>
-            <p className="v27HeroText">
-              输入官网地址，系统将生成专业 SEO 初步诊断，帮助你识别 Google 收录、技术 SEO、内容结构与询盘转化问题。
-            </p>
+      <section className="hpv32Hero"><div className="hpv32Container hpv32HeroGrid"><div><p className="hpv32Eyebrow">AI SEO Intelligence Platform</p><h1><span>AI SEO</span> Growth Platform<br/>for Global B2B Brands</h1><p>Analyze your website SEO health, discover keyword opportunities, compare competitors, and get a custom growth roadmap powered by AI.</p><div className="hpv32HeroInput"><input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="Enter your domain, e.g. example.com" /><button className="hpv32MainBtn" onClick={runDemo} disabled={loading}>{loading ? 'Analyzing...' : 'Start AI SEO Analysis'}</button></div></div><div className="hpv32EnergyWrap"><div className="hpv32EnergyOrb"/><div className="hpv32Ring"/><div className="hpv32Ring hpv32RingB"/><article className="hpv32Float hpv32F1"><b>SEO Score</b><span>{preview.score}</span></article><article className="hpv32Float hpv32F2"><b>Organic Traffic</b><span>{preview.traffic}</span></article><article className="hpv32Float hpv32F3"><b>Keywords</b><span>{preview.kw}</span></article></div></div></section>
 
-            <div className="v27HeroActions">
-              <a className="v27PrimaryBtn" href="#audit-form">立即检测官网</a>
-              <a className="v27GhostBtn" href="#report">查看报告内容</a>
-            </div>
+      <section className="hpv32Trust"><div className="hpv32Container"><p>Trusted by growing businesses worldwide</p><div>{trustTags.map((t) => <span key={t}>{t}</span>)}</div></div></section>
 
-            <div className="v27TrustRow">
-              <span>专业 SEO 摘要</span>
-              <span>风险等级判断</span>
-              <span>高优先级问题识别</span>
-            </div>
-          </div>
+      <section className="hpv32Section" id="features"><div className="hpv32Container"><div className="hpv32ValueGrid"><article><i/><h3>AI-Powered Analysis</h3><p>Fast diagnostic intelligence from site structure and content signals.</p></article><article><i/><h3>Actionable Roadmap</h3><p>Prioritized 7/30/90-day plan for SEO and conversion growth.</p></article><article><i/><h3>Competitor Intelligence</h3><p>See market positioning and strategic content gaps quickly.</p></article><article><i/><h3>Growth Focused</h3><p>Built for B2B teams that care about pipeline, not vanity metrics.</p></article></div></div></section>
 
-          <aside className="v27ReportPreview">
-            <div className="v27PreviewTop">
-              <p>SEO Report Preview</p>
-              <strong>提交后生成专属结果</strong>
-            </div>
+      <section className="hpv32Section" id="seo-tools"><div className="hpv32Container"><h2>Powerful SEO Tools</h2><SeoToolCards /></div></section>
+      <FeatureTabs active={activeTab} setActive={setActiveTab} />
 
-            <div className="v27ScoreCard">
-              <span>SEO 综合评分</span>
-              <b>待检测</b>
-              <em></em>
-            </div>
+      <section className="hpv32Section"><div className="hpv32Container hpv32Dash"><aside><h4>Smarter Decisions</h4><h4>Faster Results</h4><h4>Better Rankings</h4><h4>Real Growth</h4></aside><article><h3>AI SEO Dashboard Preview</h3><p>Overall SEO Score: {preview.score}</p><p>Top Issues: {preview.issues}</p><p>Organic Traffic: {preview.traffic}</p><p>Keywords Ranked: {preview.ranked}</p><p>Backlinks: AI estimate</p></article><aside><button className="hpv32MainBtn" onClick={() => document.getElementById('audit-form')?.scrollIntoView({ behavior: 'smooth' })}>Get Your Custom AI SEO Report</button></aside></div></section>
 
-            <div className="v27MiniList">
-              <div>
-                <span>风险等级判断</span>
-                <b>自动识别</b>
-              </div>
-              <div>
-                <span>问题数量统计</span>
-                <b>报告展示</b>
-              </div>
-              <div>
-                <span>优先级行动计划</span>
-                <b>提交后生成</b>
-              </div>
-            </div>
+      <section className="hpv32Section" id="pricing"><div className="hpv32Container"><h2>Simple, Transparent Pricing</h2><div className="hpv32Pricing"><article><h3>基础 SEO 检测报告</h3><strong>¥50</strong></article><article><h3>进阶 SEO 获客诊断</h3><strong>¥100</strong></article></div><p className="hpv32Contact">微信/电话：17667442919 ｜ WhatsApp：+86 18842600869<br/>需要 SEO 优化 Agent？联系客服获取定制方案。</p></div></section>
 
-          </aside>
-        </div>
-      </section>
+      <section className="hpv32Section" id="resources"><div className="hpv32Container"><h2>Newsletter / Stay Updated</h2><div className="hpv32HeroInput"><input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Enter your email" /><button className="hpv32LightBtn">Subscribe</button></div></div></section>
 
-      <section className="v27Strip" id="value">
-        <div className="v27Container v27StripGrid">
-          <div>
-            <b>不是普通表单</b>
-            <span>提交后自动生成 SEO 初步诊断</span>
-          </div>
-          <div>
-            <b>不是泛泛建议</b>
-            <span>输出风险等级、问题数量和修复优先级</span>
-          </div>
-          <div>
-            <b>不是只看流量</b>
-            <span>同时关注 Google 收录、内容结构和询盘转化</span>
-          </div>
-        </div>
-      </section>
-
-      <section className="v27Section">
-        <div className="v27Container">
-          <div className="v27SectionHead">
-            <p className="v27Eyebrow">Common Problems</p>
-            <h2>很多出海官网，不是产品不好，而是 Google 看不懂</h2>
-            <p>
-              SEO 问题通常藏在页面结构、关键词意图、技术配置和转化路径里。我们先帮你把问题拆开。
-            </p>
-          </div>
-
-          <div className="v27CardGrid">
-            {painPoints.map((item) => (
-              <article className="v27Card" key={item.title}>
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="v27Section v27SectionDark" id="report">
-        <div className="v27Container v27ReportGrid">
-          <div>
-            <p className="v27Eyebrow">Professional SEO Report</p>
-            <h2>你将获得一份更像顾问报告的 SEO 初步诊断</h2>
-            <p className="v27LeadText">
-              V2.6 已经支持综合评分、风险等级、执行摘要、分区诊断、预计修复周期和 follow-up 建议。V2.7 首页将这些能力前置展示，提高客户提交意愿。
-            </p>
-          </div>
-
-          <div className="v27FeatureGrid">
-            {reportFeatures.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="v27Section" id="process">
-        <div className="v27Container">
-          <div className="v27SectionHead">
-            <p className="v27Eyebrow">How It Works</p>
-            <h2>从官网链接到诊断报告，只需要三步</h2>
-          </div>
-
-          <div className="v27ProcessGrid">
-            {process.map((item) => (
-              <article className="v27ProcessCard" key={item.step}>
-                <span>{item.step}</span>
-                <h3>{item.title}</h3>
-                <p>{item.desc}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="v27Section v27AudienceSection">
-        <div className="v27Container v27AudienceGrid">
-          <div>
-            <p className="v27Eyebrow">Best For</p>
-            <h2>适合正在做海外获客的企业</h2>
-            <p className="v27LeadText">
-              如果你希望官网不只是品牌展示，而是真正承担 Google 搜索获客、询盘转化和销售线索沉淀，这套诊断会更适合你。
-            </p>
-          </div>
-
-          <div className="v27AudienceList">
-            {audiences.map((item) => (
-              <span key={item}>{item}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="v27Section v27PaidSection" id="pricing">
-        <div className="v27Container">
-          <div className="v27SectionHead">
-            <p className="v27Eyebrow">Paid SEO Audit</p>
-            <h2>付费获取你的专属 SEO 检测报告</h2>
-            <p>
-              你可以先提交官网信息。若需要获取正式检测报告，可选择基础版或进阶版。后续我也可以根据报告结果，继续提供更专业的 Google SEO 优化 Agent 与执行方案。
-            </p>
-          </div>
-
-          <div className="v27PricingGrid">
-            {paidPlans.map((plan) => (
-              <article className="v27PriceCard" key={plan.name}>
-                <div>
-                  <p>{plan.name}</p>
-                  <strong>{plan.price}</strong>
-                  <span>{plan.desc}</span>
-                </div>
-                <ul>
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-                <a className="v27PayBtn" href="#audit-form">提交官网并获取报告</a>
-              </article>
-            ))}
-          </div>
-
-          <div className="v27ContactBox">
-            <div>
-              <p className="v27Eyebrow">SEO Agent Service</p>
-              <h3>需要 SEO 优化 Agent？请联系客服</h3>
-              <p>
-                检测报告可以帮你发现官网 SEO 问题。如果你需要进一步做 Google 关键词策略、页面结构优化、内容体系建设、技术 SEO 修复，或者搭建自动化 SEO 优化 Agent，可以直接联系客服获取更专业的优化建议。
-              </p>
-            </div>
-            <div className="v27ContactList">
-              <span>客服微信 / 电话：{contactInfo.phone}</span>
-              <span>WhatsApp：{contactInfo.whatsapp}</span>
-              <a className="v27ContactBtn" href={`tel:${contactInfo.phone}`}>立即电话咨询</a>
-              <span>添加微信或 WhatsApp 时请备注：SEO Agent</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="v27FormSection" id="audit-form">
-        <div className="v27Container v27FormGrid">
-          <div className="v27FormCopy">
-            <p className="v27Eyebrow">Free SEO Audit</p>
-            <h2>提交官网，生成 SEO 检测线索</h2>
-            <p>
-              填写公司、官网、主营产品和目标市场后，系统会抓取首页并生成 SEO 初步诊断。若已完成付费，我们会根据报告内容继续联系你。
-            </p>
-            <ul>
-              <li>识别 Google 收录与技术 SEO 风险</li>
-              <li>判断内容结构和关键词覆盖问题</li>
-              <li>给出高优先级优化方向</li>
-            </ul>
-          </div>
-
-          <SeoAuditForm />
-        </div>
-      </section>
+      <section className="hpv32Section" id="audit-form"><div className="hpv32Container"><SeoAuditForm /></div></section>
     </main>
   );
 }
