@@ -26,7 +26,7 @@ export default function SeoAuditForm() {
   }
 
   return (<>
-    <form className="auditForm hpv31FormCard" onSubmit={handleSubmit}>
+    <form className="auditForm hpv32FormCard" onSubmit={handleSubmit}>
       <label>公司名称<input name="company" required /></label><label>官网链接<input name="website" required type="url" placeholder="https://example.com" /></label>
       <label>主营产品 / 服务<input name="product" required /></label><label>目标市场<input name="market" required /></label>
       <label>联系人<input name="contactName" required /></label><label>邮箱<input name="email" required type="email" /></label>
@@ -35,7 +35,7 @@ export default function SeoAuditForm() {
       {message && <p className={`formMessage ${status}`}>{message}</p>}
     </form>
     {report && (
-      <section className="reportBox hpv31FormCard" style={{ marginTop: 24 }}>
+      <section className="reportBox hpv32FormCard" style={{ marginTop: 24 }}>
         <h3>AI SEO 诊断报告（中文）</h3>
         <p><b>总分：</b>{report.score} / 100 ｜ <b>风险等级：</b>{report.riskLevel}</p>
         <p><b>核心问题：</b>{report.issueCount} 项（高优先级 {report.highPriorityCount} 项）</p>
@@ -43,8 +43,8 @@ export default function SeoAuditForm() {
         {report.sections.map((s) => <div key={s.title}><h4>{s.title}</h4><p>{s.summary}</p><ul>{s.items.map((i) => <li key={i}>{i}</li>)}</ul></div>)}
 
         <h4>7 / 30 / 90 天执行计划</h4>
-        <div className="hpv31RoadmapGrid">
-          <article className="hpv31RoadmapCard">
+        <div className="hpv32RoadmapGrid">
+          <article className="hpv32RoadmapCard">
             <b>7 天计划</b>
             <ul>
               {(Array.isArray(report.roadmap?.day7) && report.roadmap.day7.length ? report.roadmap.day7 : ['暂无计划项']).map((item, idx) => (
@@ -52,7 +52,7 @@ export default function SeoAuditForm() {
               ))}
             </ul>
           </article>
-          <article className="hpv31RoadmapCard">
+          <article className="hpv32RoadmapCard">
             <b>30 天计划</b>
             <ul>
               {(Array.isArray(report.roadmap?.day30) && report.roadmap.day30.length ? report.roadmap.day30 : ['暂无计划项']).map((item, idx) => (
@@ -60,7 +60,7 @@ export default function SeoAuditForm() {
               ))}
             </ul>
           </article>
-          <article className="hpv31RoadmapCard">
+          <article className="hpv32RoadmapCard">
             <b>90 天计划</b>
             <ul>
               {(Array.isArray(report.roadmap?.day90) && report.roadmap.day90.length ? report.roadmap.day90 : ['暂无计划项']).map((item, idx) => (
