@@ -84,6 +84,10 @@ a { color: inherit; text-decoration: none; }
 .auditForm .full, .auditForm button, .auditForm .formMessage { grid-column: 1 / -1; }
 .submitBtn { min-height: 44px; border-radius: 12px; font-weight: 700; }
 .reportBox { padding: 16px; }
+.hpv31RoadmapGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+.hpv31RoadmapCard { background: #fff; border: 1px solid #dfe6f6; border-radius: 12px; padding: 12px; box-shadow: 0 10px 24px rgba(16,30,60,.05); }
+.hpv31RoadmapCard b { color: #0b1020; display: block; margin-bottom: 6px; }
+.hpv31RoadmapCard ul { margin: 0; padding-left: 18px; color: #5d667a; }
 .formMessage.success { color: #0f8a54; }
 .formMessage.error { color: #c2415a; }
 
@@ -110,5 +114,6 @@ a { color: inherit; text-decoration: none; }
 
 @media (max-width: 960px) {
   .hpv31HeroGrid, .hpv31MetricRow, .hpv31CardGrid, .hpv31Mid, .hpv31Pricing, .hpv31FooterGrid, .auditForm, .hpv31Trust div div, .leadGrid, .reportMetrics, .pageSnapshot, .followupGrid { grid-template-columns: 1fr; }
+  .hpv31RoadmapGrid { grid-template-columns: 1fr; }
   .hpv31Nav nav { display: none; }
 }
