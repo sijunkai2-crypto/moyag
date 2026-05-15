@@ -24,7 +24,6 @@ export default function SeoAuditForm() {
     setStatus('loading');
     setMessage('');
     setReport(null);
-
     const form = event.currentTarget;
     const fd = new FormData(form);
     const payload = {
@@ -39,9 +38,7 @@ export default function SeoAuditForm() {
 
     try {
       const response = await fetch('/api/ai-seo-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || '提交失败，请稍后再试。');
@@ -55,29 +52,25 @@ export default function SeoAuditForm() {
   }
 
   return (<>
-    <form className="auditForm" onSubmit={handleSubmit}>
+    <form className="auditForm glass" onSubmit={handleSubmit}>
       <label>公司名称<input name="company" required /></label>
       <label>官网链接<input name="website" required type="url" placeholder="https://example.com" /></label>
       <label>主营产品 / 服务<input name="product" required /></label>
       <label>目标市场<input name="market" required /></label>
       <label>联系人<input name="contactName" required /></label>
       <label>邮箱<input name="email" required type="email" /></label>
-      <label>WhatsApp / 微信<input name="messenger" placeholder="可选" /></label>
+      <label className="full">WhatsApp / 微信<input name="messenger" placeholder="可选" /></label>
       <button className="submitBtn" disabled={status === 'loading'} type="submit">{status === 'loading' ? 'AI 检测中...' : '提交官网检测'}</button>
       {message && <p className={`formMessage ${status}`}>{message}</p>}
     </form>
 
     {report && (
-      <section className="reportBox" style={{ marginTop: 24 }}>
+      <section className="reportBox glass" style={{ marginTop: 24 }}>
         <h3>AI SEO 诊断报告（中文）</h3>
         <p><b>总分：</b>{report.score} / 100 ｜ <b>风险等级：</b>{report.riskLevel}</p>
         <p><b>核心问题：</b>{report.issueCount} 项（高优先级 {report.highPriorityCount} 项）</p>
         <p>{report.executiveSummary}</p>
         {report.sections.map((s) => <div key={s.title}><h4>{s.title}</h4><p>{s.summary}</p><ul>{s.items.map((i) => <li key={i}>{i}</li>)}</ul></div>)}
-        <h4>7 / 30 / 90 天执行计划</h4>
-        <p><b>7 天：</b>{report.roadmap.day7.join('；')}</p>
-        <p><b>30 天：</b>{report.roadmap.day30.join('；')}</p>
-        <p><b>90 天：</b>{report.roadmap.day90.join('；')}</p>
       </section>
     )}
   </>);
