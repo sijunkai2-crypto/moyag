@@ -1,13 +1,14 @@
 import SeoAuditForm from '../seo-audit-form';
+import ToolAnalyzer from './ToolAnalyzer';
 
 type ToolPageProps = {
   name: string;
   summary: string;
   features: string[];
-  metrics: Array<{ label: string; value: string }>;
+  toolType: string;
 };
 
-export default function ToolPage({ name, summary, features, metrics }: ToolPageProps) {
+export default function ToolPage({ name, summary, features, toolType }: ToolPageProps) {
   return (
     <main className="hpv32ToolPage">
       <header className="hpv32ToolNav">
@@ -36,18 +37,13 @@ export default function ToolPage({ name, summary, features, metrics }: ToolPageP
         </div>
       </section>
 
-      <section className="hpv32Section">
-        <div className="hpv32Container hpv32ReportPreview">
-          <h2>模拟报告预览</h2>
-          <p>Not real Semrush data · AI estimate / simulated preview</p>
-          <div className="hpv32MetricFloatGrid">
-            {metrics.map((m) => (
-              <article key={m.label} className="hpv32FloatCard">
-                <span>{m.label}</span>
-                <b>{m.value}</b>
-              </article>
-            ))}
+      <section className="hpv32Section" id="tool-analyzer">
+        <div className="hpv32Container">
+          <div className="hpv32SectionHead">
+            <p className="hpv32Eyebrow">Tool Analysis</p>
+            <h2>输入并生成模拟分析结果</h2>
           </div>
+          <ToolAnalyzer toolType={toolType} />
         </div>
       </section>
 
