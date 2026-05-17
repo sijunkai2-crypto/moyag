@@ -1,0 +1,100 @@
+.extras {
+  display: block;
+}
+
+.extras :global(.hpv34ReturnHome) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 116px;
+  min-height: 48px;
+  padding: 0 24px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.extras :global(.hpv34ToolkitSection) {
+  padding: 76px 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(239,248,243,.78));
+}
+
+.extras :global(.hpv34ToolkitHead) {
+  max-width: 760px;
+  margin-bottom: 22px;
+}
+
+.extras :global(.hpv34ToolkitHead h2) {
+  margin: 8px 0 10px;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -.045em;
+}
+
+.extras :global(.hpv34ToolkitHead p:not(.hpv34Eyebrow)) {
+  color: var(--moyag-muted, #6b7280);
+  line-height: 1.75;
+}
+
+.extras :global(.hpv34ToolkitGrid) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.extras :global(.hpv34ToolkitCard) {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border-radius: 30px;
+  border: 1px solid rgba(5,150,105,.12);
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 18px 48px rgba(15,23,42,.07);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.extras :global(.hpv34ToolkitCard:hover) {
+  transform: translateY(-4px);
+  border-color: rgba(5,150,105,.25);
+  box-shadow: 0 30px 70px rgba(5,150,105,.13);
+}
+
+.extras :global(.hpv34ToolkitCard span),
+.extras :global(.hpv34ToolkitCard .hpv32ToolBadge) {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(5,150,105,.1);
+}
+
+.extras :global(.hpv34ToolkitCard h3) {
+  margin: 18px 0 8px;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -.035em;
+}
+
+.extras :global(.hpv34ToolkitCard p) {
+  color: var(--moyag-muted, #6b7280);
+  line-height: 1.7;
+}
+
+.extras :global(.hpv34ToolkitCard b) {
+  margin-top: auto;
+  color: #047857;
+}
+
+@media (max-width: 1100px) {
+  .extras :global(.hpv34ToolkitGrid) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .extras :global(.hpv34ToolkitGrid) {
+    grid-template-columns: 1fr;
+  }
+}
