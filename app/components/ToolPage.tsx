@@ -1,5 +1,6 @@
 import SeoAuditForm from '../seo-audit-form';
 import ToolAnalyzer from './ToolAnalyzer';
+import styles from './ToolPage.module.css';
 
 type ToolPageProps = {
   name: string;
@@ -20,7 +21,7 @@ const relatedTools = [
 
 export default function ToolPage({ name, summary, features, toolType }: ToolPageProps) {
   return (
-    <main className="hpv34PortalHome hpv34ToolPortal">
+    <main className={`hpv34PortalHome hpv34ToolPortal ${styles.scope}`}>
       <header className="hpv32ToolNav hpv34NavWrap hpv34ToolNav">
         <div className="hpv32Container hpv32ToolNavInner hpv34ToolNavInner">
           <a href="/" className="hpv32Logo hpv34Logo" aria-label="Moyag AI home">
