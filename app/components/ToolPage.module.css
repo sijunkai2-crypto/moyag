@@ -2,15 +2,13 @@
   display: block;
 }
 
-:global(.hpv34ToolPortal) {
+.scope:global(.hpv34ToolPortal) {
   min-height: 100vh;
   --moyag-green: #059669;
   --moyag-green-dark: #047857;
   --moyag-blue: #007aff;
   --moyag-ink: #111827;
   --moyag-muted: #6b7280;
-  --moyag-card: rgba(255, 255, 255, .9);
-  --moyag-border: rgba(5, 150, 105, .14);
   background:
     radial-gradient(circle at 12% 12%, rgba(16, 185, 129, .18), transparent 34%),
     radial-gradient(circle at 92% 18%, rgba(0, 122, 255, .12), transparent 32%),
@@ -18,7 +16,7 @@
   color: var(--moyag-ink);
 }
 
-:global(.hpv34ToolPortal)::before {
+.scope:global(.hpv34ToolPortal)::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -28,17 +26,17 @@
   opacity: .65;
 }
 
-:global(.hpv34ToolNav) {
+.scope :global(.hpv34ToolNav) {
   background: rgba(255,255,255,.86);
   border-bottom: 1px solid rgba(0,0,0,.06);
   box-shadow: 0 10px 30px rgba(15,23,42,.04);
 }
 
-:global(.hpv34ToolNavInner) {
+.scope :global(.hpv34ToolNavInner) {
   min-height: 78px;
 }
 
-:global(.hpv34ToolTopLinks) {
+.scope :global(.hpv34ToolTopLinks) {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -46,28 +44,28 @@
   font-weight: 700;
 }
 
-:global(.hpv34ToolTopLinks a) {
+.scope :global(.hpv34ToolTopLinks a) {
   border-radius: 999px;
   padding: 8px 12px;
 }
 
-:global(.hpv34ToolTopLinks a:hover) {
+.scope :global(.hpv34ToolTopLinks a:hover) {
   background: rgba(5,150,105,.08);
   color: #047857;
 }
 
-:global(.hpv34ToolHero) {
+.scope :global(.hpv34ToolHero) {
   padding: 88px 0 46px;
 }
 
-:global(.hpv34ToolHeroGrid) {
+.scope :global(.hpv34ToolHeroGrid) {
   display: grid;
   grid-template-columns: minmax(0, 1.04fr) minmax(320px, .76fr);
   gap: 36px;
   align-items: center;
 }
 
-:global(.hpv34ToolHeroCopy h1) {
+.scope :global(.hpv34ToolHeroCopy h1) {
   margin: 8px 0 16px;
   max-width: 760px;
   font-size: clamp(46px, 6vw, 82px);
@@ -75,22 +73,22 @@
   letter-spacing: -.06em;
 }
 
-:global(.hpv34ToolHeroCopy p:not(.hpv34Eyebrow)) {
+.scope :global(.hpv34ToolHeroCopy p:not(.hpv34Eyebrow)) {
   max-width: 680px;
   color: var(--moyag-muted);
   font-size: 18px;
   line-height: 1.8;
 }
 
-:global(.hpv34ToolHeroActions) {
+.scope :global(.hpv34ToolHeroActions) {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 22px;
 }
 
-:global(.hpv34PrimaryLink),
-:global(.hpv34SecondaryLink) {
+.scope :global(.hpv34PrimaryLink),
+.scope :global(.hpv34SecondaryLink) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -100,19 +98,19 @@
   font-weight: 900;
 }
 
-:global(.hpv34PrimaryLink) {
+.scope :global(.hpv34PrimaryLink) {
   color: #fff;
   background: linear-gradient(135deg, #047857, #10b981);
   box-shadow: 0 18px 36px rgba(5,150,105,.24);
 }
 
-:global(.hpv34SecondaryLink) {
+.scope :global(.hpv34SecondaryLink) {
   color: #064e3b;
   background: rgba(255,255,255,.78);
   border: 1px solid rgba(5,150,105,.15);
 }
 
-:global(.hpv34ToolServicePanel) {
+.scope :global(.hpv34ToolServicePanel) {
   position: relative;
   border: 1px solid rgba(255,255,255,.72);
   border-radius: 36px;
@@ -122,7 +120,7 @@
   backdrop-filter: blur(18px);
 }
 
-:global(.hpv34ToolBigMetric) {
+.scope :global(.hpv34ToolBigMetric) {
   margin: 24px 0;
   padding: 26px;
   border-radius: 28px;
@@ -130,24 +128,24 @@
   color: #fff;
 }
 
-:global(.hpv34ToolBigMetric strong) {
+.scope :global(.hpv34ToolBigMetric strong) {
   display: block;
   font-size: 72px;
   line-height: .9;
   letter-spacing: -.07em;
 }
 
-:global(.hpv34ToolBigMetric span) {
+.scope :global(.hpv34ToolBigMetric span) {
   color: rgba(255,255,255,.68);
 }
 
-:global(.hpv34ToolChipGrid) {
+.scope :global(.hpv34ToolChipGrid) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-:global(.hpv34ToolChipGrid a) {
+.scope :global(.hpv34ToolChipGrid a) {
   padding: 13px 14px;
   border-radius: 18px;
   color: #064e3b;
@@ -156,17 +154,17 @@
   border: 1px solid rgba(5,150,105,.1);
 }
 
-:global(.hpv34ToolFeatureSection) {
+.scope :global(.hpv34ToolFeatureSection) {
   padding: 20px 0 58px;
 }
 
-:global(.hpv34ToolFeatureGrid) {
+.scope :global(.hpv34ToolFeatureGrid) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
-:global(.hpv34ServiceTile) {
+.scope :global(.hpv34ServiceTile) {
   min-height: 230px;
   padding: 24px;
   border-radius: 32px;
@@ -176,12 +174,12 @@
   transition: transform .2s ease, box-shadow .2s ease;
 }
 
-:global(.hpv34ServiceTile:hover) {
+.scope :global(.hpv34ServiceTile:hover) {
   transform: translateY(-4px);
   box-shadow: 0 30px 70px rgba(5,150,105,.13);
 }
 
-:global(.hpv34ServiceTile span) {
+.scope :global(.hpv34ServiceTile span) {
   display: inline-flex;
   width: 42px;
   height: 42px;
@@ -193,30 +191,30 @@
   background: rgba(5,150,105,.1);
 }
 
-:global(.hpv34ServiceTile h3) {
+.scope :global(.hpv34ServiceTile h3) {
   margin: 28px 0 10px;
   font-size: 24px;
   letter-spacing: -.035em;
 }
 
-:global(.hpv34ServiceTile p) {
+.scope :global(.hpv34ServiceTile p) {
   color: var(--moyag-muted);
   line-height: 1.75;
 }
 
-:global(.hpv34ToolAnalyzerSection) {
+.scope :global(.hpv34ToolAnalyzerSection) {
   padding: 72px 0;
   background: rgba(255,255,255,.48);
 }
 
-:global(.hpv34ToolAnalyzerGrid) {
+.scope :global(.hpv34ToolAnalyzerGrid) {
   display: grid;
   grid-template-columns: .78fr 1.22fr;
   gap: 24px;
   align-items: start;
 }
 
-:global(.hpv34ToolSectionCopy) {
+.scope :global(.hpv34ToolSectionCopy) {
   position: sticky;
   top: 104px;
   padding: 28px;
@@ -226,23 +224,23 @@
   box-shadow: 0 30px 70px rgba(16,37,29,.16);
 }
 
-:global(.hpv34ToolSectionCopy .hpv34Eyebrow) {
+.scope :global(.hpv34ToolSectionCopy .hpv34Eyebrow) {
   color: #86efac;
 }
 
-:global(.hpv34ToolSectionCopy h2) {
+.scope :global(.hpv34ToolSectionCopy h2) {
   margin: 8px 0 12px;
   font-size: clamp(30px, 4vw, 46px);
   line-height: 1.08;
   letter-spacing: -.045em;
 }
 
-:global(.hpv34ToolSectionCopy p:not(.hpv34Eyebrow)) {
+.scope :global(.hpv34ToolSectionCopy p:not(.hpv34Eyebrow)) {
   color: rgba(255,255,255,.74);
   line-height: 1.8;
 }
 
-:global(.hpv34AnalyzerCard) {
+.scope :global(.hpv34AnalyzerCard) {
   overflow: hidden;
   border-radius: 34px;
   border: 1px solid rgba(5,150,105,.13);
@@ -250,14 +248,14 @@
   box-shadow: 0 24px 70px rgba(15,23,42,.09);
 }
 
-:global(.hpv34AnalyzerHeader) {
+.scope :global(.hpv34AnalyzerHeader) {
   display: flex;
   gap: 14px;
   align-items: center;
   padding: 24px 24px 0;
 }
 
-:global(.hpv34AnalyzerIcon) {
+.scope :global(.hpv34AnalyzerIcon) {
   width: 48px;
   height: 48px;
   flex: 0 0 auto;
@@ -271,39 +269,39 @@
   box-shadow: 0 16px 30px rgba(5,150,105,.24);
 }
 
-:global(.hpv34AnalyzerHeader b) {
+.scope :global(.hpv34AnalyzerHeader b) {
   display: block;
   font-size: 20px;
 }
 
-:global(.hpv34AnalyzerHeader p) {
+.scope :global(.hpv34AnalyzerHeader p) {
   margin: 4px 0 0;
   color: var(--moyag-muted);
 }
 
-:global(.hpv34ToolForm) {
+.scope :global(.hpv34ToolForm) {
   padding: 24px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-:global(.hpv34ToolForm label) {
+.scope :global(.hpv34ToolForm label) {
   color: #064e3b;
   font-weight: 800;
 }
 
-:global(.hpv34ToolForm input),
-:global(.hpv34AuditFormCard input) {
+.scope :global(.hpv34ToolForm input),
+.scope :global(.hpv34AuditFormCard input) {
   border-color: rgba(5,150,105,.14);
   border-radius: 18px;
   background: #f8fbf9;
 }
 
-:global(.hpv34AnalyzeBtn) {
+.scope :global(.hpv34AnalyzeBtn) {
   min-height: 52px;
   border-radius: 20px;
 }
 
-:global(.hpv34AnalyzerCard .hpv32ReportPreview) {
+.scope :global(.hpv34AnalyzerCard .hpv32ReportPreview) {
   margin: 0 24px 24px;
   border-radius: 28px;
   border-color: rgba(5,150,105,.12);
@@ -311,66 +309,66 @@
   box-shadow: none;
 }
 
-:global(.hpv34AnalyzerCard .hpv32ReportPreview h3) {
+.scope :global(.hpv34AnalyzerCard .hpv32ReportPreview h3) {
   margin-top: 0;
   font-size: 24px;
 }
 
-:global(.hpv34AnalyzerCard .hpv32MetricFloatGrid) {
+.scope :global(.hpv34AnalyzerCard .hpv32MetricFloatGrid) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-:global(.hpv34AnalyzerCard .hpv32FloatCard) {
+.scope :global(.hpv34AnalyzerCard .hpv32FloatCard) {
   border: 1px solid rgba(5,150,105,.12);
   border-radius: 22px;
   background: #fff;
   box-shadow: 0 14px 32px rgba(15,23,42,.05);
 }
 
-:global(.hpv34AnalyzerCard .hpv32FloatCard b) {
+.scope :global(.hpv34AnalyzerCard .hpv32FloatCard b) {
   color: #047857;
   font-size: 20px;
   overflow-wrap: anywhere;
 }
 
-:global(.hpv34ToolAuditSection) {
+.scope :global(.hpv34ToolAuditSection) {
   padding: 72px 0 88px;
 }
 
 @media (max-width: 960px) {
-  :global(.hpv34ToolHeroGrid),
-  :global(.hpv34ToolFeatureGrid),
-  :global(.hpv34ToolAnalyzerGrid),
-  :global(.hpv34ToolForm),
-  :global(.hpv34AnalyzerCard .hpv32MetricFloatGrid) {
+  .scope :global(.hpv34ToolHeroGrid),
+  .scope :global(.hpv34ToolFeatureGrid),
+  .scope :global(.hpv34ToolAnalyzerGrid),
+  .scope :global(.hpv34ToolForm),
+  .scope :global(.hpv34AnalyzerCard .hpv32MetricFloatGrid) {
     grid-template-columns: 1fr;
   }
 
-  :global(.hpv34ToolTopLinks),
-  :global(.hpv34ToolNav .hpv34NavCta) {
+  .scope :global(.hpv34ToolTopLinks),
+  .scope :global(.hpv34ToolNav .hpv34NavCta) {
     display: none;
   }
 
-  :global(.hpv34ToolHero) {
+  .scope :global(.hpv34ToolHero) {
     padding-top: 56px;
   }
 
-  :global(.hpv34ToolSectionCopy) {
+  .scope :global(.hpv34ToolSectionCopy) {
     position: static;
   }
 }
 
 @media (max-width: 640px) {
-  :global(.hpv34ToolHeroCopy h1) {
+  .scope :global(.hpv34ToolHeroCopy h1) {
     font-size: 42px;
   }
 
-  :global(.hpv34ToolHeroActions) {
+  .scope :global(.hpv34ToolHeroActions) {
     flex-direction: column;
   }
 
-  :global(.hpv34PrimaryLink),
-  :global(.hpv34SecondaryLink) {
+  .scope :global(.hpv34PrimaryLink),
+  .scope :global(.hpv34SecondaryLink) {
     width: 100%;
   }
 }
