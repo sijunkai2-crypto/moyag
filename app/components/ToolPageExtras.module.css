@@ -1,0 +1,322 @@
+.extras {
+  display: block;
+}
+
+.extras :global(.hpv34ReturnHome) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 116px;
+  min-height: 48px;
+  padding: 0 24px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.extras :global(.hpv34ToolkitSection) {
+  padding: 76px 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.72), rgba(239,248,243,.78));
+}
+
+.extras :global(.hpv34ToolkitHead) {
+  max-width: 760px;
+  margin-bottom: 22px;
+}
+
+.extras :global(.hpv34ToolkitHead h2) {
+  margin: 8px 0 10px;
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -.045em;
+}
+
+.extras :global(.hpv34ToolkitHead p:not(.hpv34Eyebrow)) {
+  color: var(--moyag-muted, #6b7280);
+  line-height: 1.75;
+}
+
+.extras :global(.hpv34ToolkitGrid) {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.extras :global(.hpv34ToolkitCard) {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border-radius: 30px;
+  border: 1px solid rgba(5,150,105,.12);
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 18px 48px rgba(15,23,42,.07);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.extras :global(.hpv34ToolkitCard:hover) {
+  transform: translateY(-4px);
+  border-color: rgba(5,150,105,.25);
+  box-shadow: 0 30px 70px rgba(5,150,105,.13);
+}
+
+.extras :global(.hpv34ToolkitCard span),
+.extras :global(.hpv34ToolkitCard .hpv32ToolBadge) {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 900;
+  background: rgba(5,150,105,.1);
+}
+
+.extras :global(.hpv34ToolkitCard h3) {
+  margin: 18px 0 8px;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -.035em;
+}
+
+.extras :global(.hpv34ToolkitCard p) {
+  color: var(--moyag-muted, #6b7280);
+  line-height: 1.7;
+}
+
+.extras :global(.hpv34ToolkitCard b) {
+  margin-top: auto;
+  color: #047857;
+}
+
+.extras :global(.hpv34ResultPanel) {
+  margin: 0 24px 24px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(15,23,42,.08);
+  background: #fff;
+  box-shadow: 0 18px 48px rgba(15,23,42,.08);
+}
+
+.extras :global(.hpv34ResultHeader) {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fbf9, #eef8f3);
+  border-bottom: 1px solid rgba(5,150,105,.12);
+}
+
+.extras :global(.hpv34ResultEyebrow) {
+  margin: 0 0 6px;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.extras :global(.hpv34ResultHeader h3) {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -.04em;
+}
+
+.extras :global(.hpv34ResultHeader p:last-child) {
+  margin: 8px 0 0;
+  color: #6b7280;
+}
+
+.extras :global(.hpv34ResultScore) {
+  width: 132px;
+  height: 132px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #064e3b;
+  background: conic-gradient(#10b981 0 78%, #e5e7eb 78% 100%);
+  position: relative;
+}
+
+.extras :global(.hpv34ResultScore::after) {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.extras :global(.hpv34ResultScore strong),
+.extras :global(.hpv34ResultScore span),
+.extras :global(.hpv34ResultScore small) {
+  position: relative;
+  z-index: 1;
+}
+
+.extras :global(.hpv34ResultScore strong) {
+  font-size: 42px;
+  line-height: .9;
+  letter-spacing: -.06em;
+}
+
+.extras :global(.hpv34ResultScore span),
+.extras :global(.hpv34ResultScore small) {
+  color: #6b7280;
+  font-weight: 800;
+}
+
+.extras :global(.hpv34AuditMetricGrid) {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 1px;
+  background: rgba(15,23,42,.08);
+  border-bottom: 1px solid rgba(15,23,42,.08);
+}
+
+.extras :global(.hpv34AuditMetricGrid article) {
+  min-height: 112px;
+  padding: 16px;
+  background: #fff;
+}
+
+.extras :global(.hpv34AuditMetricGrid span) {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.extras :global(.hpv34AuditMetricGrid b) {
+  display: block;
+  margin-top: 8px;
+  color: #047857;
+  font-size: 28px;
+  letter-spacing: -.04em;
+}
+
+.extras :global(.hpv34AuditMetricGrid small) {
+  color: #6b7280;
+}
+
+.extras :global(.hpv34ResultTableWrap) {
+  overflow-x: auto;
+}
+
+.extras :global(.hpv34ResultTable) {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.extras :global(.hpv34ResultTable th) {
+  padding: 14px 16px;
+  text-align: left;
+  color: #374151;
+  background: #f3f4f6;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 900;
+}
+
+.extras :global(.hpv34ResultTable td) {
+  padding: 16px;
+  color: #111827;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+}
+
+.extras :global(.hpv34ResultTable td:nth-child(2)) {
+  font-weight: 900;
+  color: #047857;
+}
+
+.extras :global(.hpv34Status) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.extras :global(.hpv34Status-good) {
+  color: #047857;
+  background: rgba(16,185,129,.12);
+}
+
+.extras :global(.hpv34Status-warning) {
+  color: #b45309;
+  background: rgba(245,158,11,.14);
+}
+
+.extras :global(.hpv34Status-error) {
+  color: #b91c1c;
+  background: rgba(239,68,68,.12);
+}
+
+.extras :global(.hpv34Status-neutral) {
+  color: #1d4ed8;
+  background: rgba(59,130,246,.12);
+}
+
+.extras :global(.hpv34PriorityBox) {
+  margin: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background: #10251d;
+  color: #fff;
+}
+
+.extras :global(.hpv34PriorityBox h4) {
+  margin: 0 0 10px;
+  font-size: 18px;
+}
+
+.extras :global(.hpv34PriorityBox ol) {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.extras :global(.hpv34PriorityBox li) {
+  margin: 8px 0;
+  color: rgba(255,255,255,.78);
+  line-height: 1.65;
+}
+
+.extras :global(.hpv34PriorityBox b) {
+  color: #86efac;
+}
+
+.extras :global(.hpv34ResultNotice) {
+  margin: 0;
+  padding: 0 20px 20px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .extras :global(.hpv34ToolkitGrid) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .extras :global(.hpv34AuditMetricGrid) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .extras :global(.hpv34ToolkitGrid),
+  .extras :global(.hpv34AuditMetricGrid) {
+    grid-template-columns: 1fr;
+  }
+
+  .extras :global(.hpv34ResultHeader) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

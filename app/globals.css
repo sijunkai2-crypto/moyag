@@ -69,13 +69,114 @@ a { color: inherit; text-decoration: none; }
 .emptyState { color: #61708d; padding: 12px; }
 .issueCard { border: 1px solid #dde4f5; border-radius: 10px; padding: 10px; background: #fff; }
 
-@media (max-width: 960px) {
-  .hpv32HeroGrid, .hpv32FeatureMiniGrid, .hpv32ToolGrid, .hpv32MetricFloatGrid, .hpv32Pricing, .auditForm, .leadGrid, .reportMetrics, .followupGrid, .kpiGrid { grid-template-columns: 1fr; }
-  .hpv32Nav nav { display: none; }
-  .hpv32RoadmapGrid { grid-template-columns: 1fr; }
-}
-
 .hpv33ToolForm { align-items: end; }
 .hpv33Panel { margin-top: 14px; }
 .hpv33MetricGrid { position: static; }
 .hpv33MetricCard { position: static; min-width: 0; }
+
+/* V3.4 Figma Make inspired digital services portal style */
+.hpv34PortalHome {
+  --moyag-green: #059669;
+  --moyag-green-dark: #047857;
+  --moyag-blue: #007aff;
+  --moyag-ink: #1d1d1f;
+  --moyag-muted: #6b7280;
+  --moyag-soft: #f2f7f4;
+  --moyag-border: rgba(5, 150, 105, .13);
+  background:
+    radial-gradient(circle at 16% 8%, rgba(16,185,129,.16), transparent 34%),
+    radial-gradient(circle at 86% 24%, rgba(0,122,255,.12), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf8 44%, #eef8f3 100%);
+  color: var(--moyag-ink);
+}
+.hpv34PortalHome::before {
+  background-image: linear-gradient(rgba(5,150,105,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(5,150,105,.055) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: .6;
+}
+.hpv34NavWrap {
+  background: rgba(255,255,255,.84);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 10px 30px rgba(15,23,42,.04);
+}
+.hpv34Nav { min-height: 78px; }
+.hpv34Logo { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; letter-spacing: -.02em; }
+.hpv34LogoMark { width: 34px; height: 34px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, var(--moyag-green), #10b981); box-shadow: 0 12px 26px rgba(5,150,105,.26); }
+.hpv34Nav nav a { padding: 8px 10px; border-radius: 999px; transition: background .2s ease, color .2s ease; }
+.hpv34Nav nav a:hover { background: rgba(5,150,105,.08); color: var(--moyag-green-dark); }
+.hpv34NavCta { border: 0; border-radius: 999px; min-height: 40px; padding: 0 16px; color: #fff; font-weight: 700; background: linear-gradient(135deg, var(--moyag-green-dark), var(--moyag-green)); box-shadow: 0 14px 28px rgba(5,150,105,.24); }
+.hpv34Hero { padding: 84px 0 46px; }
+.hpv34HeroGrid { grid-template-columns: 1.05fr .95fr; gap: 42px; }
+.hpv34HeroCopy h1 { font-size: clamp(42px, 6vw, 76px); letter-spacing: -.055em; max-width: 780px; }
+.hpv34HeroCopy h1 span { background: linear-gradient(135deg, var(--moyag-green-dark), #10b981 45%, var(--moyag-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hpv34HeroCopy > p:not(.hpv34Eyebrow) { max-width: 660px; font-size: 18px; color: var(--moyag-muted); }
+.hpv34Eyebrow { color: var(--moyag-green-dark); font-weight: 800; letter-spacing: .13em; }
+.hpv34HeroInput { max-width: 680px; border-radius: 24px; border-color: var(--moyag-border); background: rgba(255,255,255,.9); box-shadow: 0 24px 60px rgba(15,23,42,.08); padding: 10px; }
+.hpv34HeroInput input { padding: 0 12px; font-size: 15px; }
+.hpv34MainBtn, .submitBtn { border-radius: 18px; background: linear-gradient(135deg, var(--moyag-green-dark), var(--moyag-green)); box-shadow: 0 14px 32px rgba(5,150,105,.24); font-weight: 800; }
+.hpv34HeroStats { margin-top: 22px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: 640px; }
+.hpv34HeroStats article { padding: 16px; border: 1px solid rgba(0,0,0,.06); border-radius: 22px; background: rgba(255,255,255,.74); box-shadow: 0 16px 36px rgba(15,23,42,.06); }
+.hpv34HeroStats strong { display: block; font-size: 28px; color: var(--moyag-green-dark); }
+.hpv34HeroStats span { color: var(--moyag-muted); font-size: 13px; }
+.hpv34PortalPanelWrap { min-height: 470px; display: flex; align-items: center; justify-content: center; }
+.hpv34PortalPanel { width: min(420px, 100%); border: 1px solid rgba(255,255,255,.72); border-radius: 34px; padding: 22px; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,252,248,.84)); box-shadow: 0 34px 80px rgba(4,120,87,.18), inset 0 1px 0 rgba(255,255,255,.9); backdrop-filter: blur(18px); }
+.hpv34PanelTop { display: flex; align-items: center; gap: 8px; color: var(--moyag-muted); font-size: 13px; }
+.hpv34LiveDot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 8px rgba(16,185,129,.12); }
+.hpv34ScoreRing { width: 180px; height: 180px; margin: 24px auto; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: conic-gradient(var(--moyag-green) 0 86%, #e5e7eb 86% 100%); position: relative; box-shadow: 0 18px 50px rgba(5,150,105,.18); }
+.hpv34ScoreRing::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: #fff; }
+.hpv34ScoreRing span, .hpv34ScoreRing small { position: relative; z-index: 1; }
+.hpv34ScoreRing span { font-size: 54px; font-weight: 900; color: var(--moyag-green-dark); letter-spacing: -.06em; }
+.hpv34ScoreRing small { color: var(--moyag-muted); }
+.hpv34MiniServiceGrid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.hpv34MiniServiceGrid a { padding: 14px; border-radius: 18px; background: #f2f7f4; color: #064e3b; font-weight: 800; border: 1px solid rgba(5,150,105,.1); }
+.hpv34InsightCard { margin-top: 12px; border-radius: 22px; padding: 16px; background: #10251d; color: #fff; }
+.hpv34InsightCard span { display: block; color: rgba(255,255,255,.64); font-size: 12px; margin-bottom: 4px; }
+.hpv34FloatCard { background: rgba(255,255,255,.9); border-color: rgba(5,150,105,.14); }
+.hpv34QuickAccess { margin-top: -12px; padding: 0 0 36px; }
+.hpv34QuickGrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.hpv34QuickCard { min-height: 126px; padding: 20px; border-radius: 26px; background: rgba(255,255,255,.88); border: 1px solid rgba(5,150,105,.1); box-shadow: 0 18px 46px rgba(15,23,42,.07); transition: transform .2s ease, box-shadow .2s ease; }
+.hpv34QuickCard:hover, .hpv32ToolCard:hover, .hpv32GlassCard:hover { transform: translateY(-4px); box-shadow: 0 26px 60px rgba(5,150,105,.12); }
+.hpv34QuickCard span { font-weight: 900; color: #064e3b; }
+.hpv34QuickCard p { color: var(--moyag-muted); margin-bottom: 0; line-height: 1.55; }
+.hpv34SectionIntro { padding: 38px 0 10px; }
+.hpv34SectionIntroInner { max-width: 760px; text-align: center; }
+.hpv34SectionIntro h2, .hpv34SectionHead h2, .hpv34AuditCopy h2 { font-size: clamp(30px, 4vw, 48px); letter-spacing: -.04em; margin: 8px 0; }
+.hpv34SectionIntro p, .hpv34SectionHead p, .hpv34AuditCopy p { color: var(--moyag-muted); line-height: 1.75; }
+.hpv34PortalHome .hpv32GlassCard, .hpv34PortalHome .hpv32ToolCard, .hpv34PortalHome .hpv32Pricing article, .hpv34AuditFormCard { border-radius: 28px; border-color: rgba(5,150,105,.1); background: rgba(255,255,255,.9); box-shadow: 0 18px 46px rgba(15,23,42,.07); }
+.hpv34PortalHome .hpv32ToolBadge, .hpv34PortalHome .hpv32ToolCard b, .hpv34PortalHome .hpv32Pricing strong { color: var(--moyag-green-dark); }
+.hpv34PortalHome .hpv32ToolCard b::after { content: ''; }
+.hpv34PricingSection { background: rgba(255,255,255,.46); }
+.hpv34Pricing { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.hpv34Pricing article { min-height: 230px; display: flex; flex-direction: column; justify-content: space-between; }
+.hpv34Pricing article p { color: var(--moyag-muted); }
+.hpv34PlanTag { width: fit-content; border-radius: 999px; padding: 6px 10px; color: #065f46; font-weight: 900; font-size: 12px; background: rgba(5,150,105,.1); }
+.hpv34PlanFeatured { background: linear-gradient(180deg, #ffffff, #effaf5) !important; border-color: rgba(5,150,105,.24) !important; }
+.hpv34Contact { text-align: center; font-weight: 700; }
+.hpv34AuditSection { padding-bottom: 78px; }
+.hpv34AuditGrid { display: grid; grid-template-columns: .78fr 1.22fr; gap: 22px; align-items: start; }
+.hpv34AuditCopy { position: sticky; top: 104px; padding: 26px; border-radius: 30px; background: #10251d; color: #fff; box-shadow: 0 30px 70px rgba(16,37,29,.16); }
+.hpv34AuditCopy .hpv34Eyebrow { color: #86efac; }
+.hpv34AuditCopy p { color: rgba(255,255,255,.72); }
+.hpv34AuditFormCard { overflow: hidden; }
+.hpv34AuditFormCard .auditForm { padding: 20px; }
+.hpv34Footer { padding: 28px 0; background: #10251d; color: #fff; }
+.hpv34FooterInner { display: flex; justify-content: space-between; gap: 16px; align-items: center; color: rgba(255,255,255,.74); }
+.hpv34FooterInner b { color: #fff; }
+
+@media (max-width: 960px) {
+  .hpv32HeroGrid, .hpv32FeatureMiniGrid, .hpv32ToolGrid, .hpv32MetricFloatGrid, .hpv32Pricing, .auditForm, .leadGrid, .reportMetrics, .followupGrid, .kpiGrid, .hpv34HeroGrid, .hpv34QuickGrid, .hpv34AuditGrid, .hpv34HeroStats { grid-template-columns: 1fr; }
+  .hpv32Nav nav { display: none; }
+  .hpv32RoadmapGrid { grid-template-columns: 1fr; }
+  .hpv34NavCta { display: none; }
+  .hpv34Hero { padding-top: 54px; }
+  .hpv34PortalPanelWrap { min-height: 390px; }
+  .hpv34AuditCopy { position: static; }
+  .hpv34FooterInner { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 640px) {
+  .hpv34HeroInput { flex-direction: column; }
+  .hpv34MainBtn { width: 100%; }
+  .hpv34HeroCopy h1 { font-size: 40px; }
+  .hpv34PortalPanel { border-radius: 26px; }
+}

@@ -1,0 +1,374 @@
+.scope {
+  display: block;
+}
+
+.scope:global(.hpv34ToolPortal) {
+  min-height: 100vh;
+  --moyag-green: #059669;
+  --moyag-green-dark: #047857;
+  --moyag-blue: #007aff;
+  --moyag-ink: #111827;
+  --moyag-muted: #6b7280;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(16, 185, 129, .18), transparent 34%),
+    radial-gradient(circle at 92% 18%, rgba(0, 122, 255, .12), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f5fbf7 48%, #eef8f3 100%);
+  color: var(--moyag-ink);
+}
+
+.scope:global(.hpv34ToolPortal)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(5,150,105,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(5,150,105,.055) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: .65;
+}
+
+.scope :global(.hpv34ToolNav) {
+  background: rgba(255,255,255,.86);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  box-shadow: 0 10px 30px rgba(15,23,42,.04);
+}
+
+.scope :global(.hpv34ToolNavInner) {
+  min-height: 78px;
+}
+
+.scope :global(.hpv34ToolTopLinks) {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #4b5563;
+  font-weight: 700;
+}
+
+.scope :global(.hpv34ToolTopLinks a) {
+  border-radius: 999px;
+  padding: 8px 12px;
+}
+
+.scope :global(.hpv34ToolTopLinks a:hover) {
+  background: rgba(5,150,105,.08);
+  color: #047857;
+}
+
+.scope :global(.hpv34ToolHero) {
+  padding: 88px 0 46px;
+}
+
+.scope :global(.hpv34ToolHeroGrid) {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(320px, .76fr);
+  gap: 36px;
+  align-items: center;
+}
+
+.scope :global(.hpv34ToolHeroCopy h1) {
+  margin: 8px 0 16px;
+  max-width: 760px;
+  font-size: clamp(46px, 6vw, 82px);
+  line-height: .98;
+  letter-spacing: -.06em;
+}
+
+.scope :global(.hpv34ToolHeroCopy p:not(.hpv34Eyebrow)) {
+  max-width: 680px;
+  color: var(--moyag-muted);
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.scope :global(.hpv34ToolHeroActions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.scope :global(.hpv34PrimaryLink),
+.scope :global(.hpv34SecondaryLink) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 999px;
+  padding: 0 20px;
+  font-weight: 900;
+}
+
+.scope :global(.hpv34PrimaryLink) {
+  color: #fff;
+  background: linear-gradient(135deg, #047857, #10b981);
+  box-shadow: 0 18px 36px rgba(5,150,105,.24);
+}
+
+.scope :global(.hpv34SecondaryLink) {
+  color: #064e3b;
+  background: rgba(255,255,255,.78);
+  border: 1px solid rgba(5,150,105,.15);
+}
+
+.scope :global(.hpv34ToolServicePanel) {
+  position: relative;
+  border: 1px solid rgba(255,255,255,.72);
+  border-radius: 36px;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(242,247,244,.88));
+  box-shadow: 0 34px 80px rgba(4,120,87,.18), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter: blur(18px);
+}
+
+.scope :global(.hpv34ToolBigMetric) {
+  margin: 24px 0;
+  padding: 26px;
+  border-radius: 28px;
+  background: #10251d;
+  color: #fff;
+}
+
+.scope :global(.hpv34ToolBigMetric strong) {
+  display: block;
+  font-size: 72px;
+  line-height: .9;
+  letter-spacing: -.07em;
+}
+
+.scope :global(.hpv34ToolBigMetric span) {
+  color: rgba(255,255,255,.68);
+}
+
+.scope :global(.hpv34ToolChipGrid) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scope :global(.hpv34ToolChipGrid a) {
+  padding: 13px 14px;
+  border-radius: 18px;
+  color: #064e3b;
+  font-weight: 900;
+  background: #f2f7f4;
+  border: 1px solid rgba(5,150,105,.1);
+}
+
+.scope :global(.hpv34ToolFeatureSection) {
+  padding: 20px 0 58px;
+}
+
+.scope :global(.hpv34ToolFeatureGrid) {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.scope :global(.hpv34ServiceTile) {
+  min-height: 230px;
+  padding: 24px;
+  border-radius: 32px;
+  background: rgba(255,255,255,.9);
+  border: 1px solid rgba(5,150,105,.12);
+  box-shadow: 0 20px 50px rgba(15,23,42,.07);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.scope :global(.hpv34ServiceTile:hover) {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 70px rgba(5,150,105,.13);
+}
+
+.scope :global(.hpv34ServiceTile span) {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: #047857;
+  font-weight: 900;
+  background: rgba(5,150,105,.1);
+}
+
+.scope :global(.hpv34ServiceTile h3) {
+  margin: 28px 0 10px;
+  font-size: 24px;
+  letter-spacing: -.035em;
+}
+
+.scope :global(.hpv34ServiceTile p) {
+  color: var(--moyag-muted);
+  line-height: 1.75;
+}
+
+.scope :global(.hpv34ToolAnalyzerSection) {
+  padding: 72px 0;
+  background: rgba(255,255,255,.48);
+}
+
+.scope :global(.hpv34ToolAnalyzerGrid) {
+  display: grid;
+  grid-template-columns: .78fr 1.22fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.scope :global(.hpv34ToolSectionCopy) {
+  position: sticky;
+  top: 104px;
+  padding: 28px;
+  border-radius: 34px;
+  color: #fff;
+  background: #10251d;
+  box-shadow: 0 30px 70px rgba(16,37,29,.16);
+}
+
+.scope :global(.hpv34ToolSectionCopy .hpv34Eyebrow) {
+  color: #86efac;
+}
+
+.scope :global(.hpv34ToolSectionCopy h2) {
+  margin: 8px 0 12px;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -.045em;
+}
+
+.scope :global(.hpv34ToolSectionCopy p:not(.hpv34Eyebrow)) {
+  color: rgba(255,255,255,.74);
+  line-height: 1.8;
+}
+
+.scope :global(.hpv34AnalyzerCard) {
+  overflow: hidden;
+  border-radius: 34px;
+  border: 1px solid rgba(5,150,105,.13);
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 24px 70px rgba(15,23,42,.09);
+}
+
+.scope :global(.hpv34AnalyzerHeader) {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 24px 24px 0;
+}
+
+.scope :global(.hpv34AnalyzerIcon) {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  color: #fff;
+  font-weight: 900;
+  background: linear-gradient(135deg, #047857, #10b981);
+  box-shadow: 0 16px 30px rgba(5,150,105,.24);
+}
+
+.scope :global(.hpv34AnalyzerHeader b) {
+  display: block;
+  font-size: 20px;
+}
+
+.scope :global(.hpv34AnalyzerHeader p) {
+  margin: 4px 0 0;
+  color: var(--moyag-muted);
+}
+
+.scope :global(.hpv34ToolForm) {
+  padding: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scope :global(.hpv34ToolForm label) {
+  color: #064e3b;
+  font-weight: 800;
+}
+
+.scope :global(.hpv34ToolForm input),
+.scope :global(.hpv34AuditFormCard input) {
+  border-color: rgba(5,150,105,.14);
+  border-radius: 18px;
+  background: #f8fbf9;
+}
+
+.scope :global(.hpv34AnalyzeBtn) {
+  min-height: 52px;
+  border-radius: 20px;
+}
+
+.scope :global(.hpv34AnalyzerCard .hpv32ReportPreview) {
+  margin: 0 24px 24px;
+  border-radius: 28px;
+  border-color: rgba(5,150,105,.12);
+  background: #f2f7f4;
+  box-shadow: none;
+}
+
+.scope :global(.hpv34AnalyzerCard .hpv32ReportPreview h3) {
+  margin-top: 0;
+  font-size: 24px;
+}
+
+.scope :global(.hpv34AnalyzerCard .hpv32MetricFloatGrid) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scope :global(.hpv34AnalyzerCard .hpv32FloatCard) {
+  border: 1px solid rgba(5,150,105,.12);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(15,23,42,.05);
+}
+
+.scope :global(.hpv34AnalyzerCard .hpv32FloatCard b) {
+  color: #047857;
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.scope :global(.hpv34ToolAuditSection) {
+  padding: 72px 0 88px;
+}
+
+@media (max-width: 960px) {
+  .scope :global(.hpv34ToolHeroGrid),
+  .scope :global(.hpv34ToolFeatureGrid),
+  .scope :global(.hpv34ToolAnalyzerGrid),
+  .scope :global(.hpv34ToolForm),
+  .scope :global(.hpv34AnalyzerCard .hpv32MetricFloatGrid) {
+    grid-template-columns: 1fr;
+  }
+
+  .scope :global(.hpv34ToolTopLinks),
+  .scope :global(.hpv34ToolNav .hpv34NavCta) {
+    display: none;
+  }
+
+  .scope :global(.hpv34ToolHero) {
+    padding-top: 56px;
+  }
+
+  .scope :global(.hpv34ToolSectionCopy) {
+    position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .scope :global(.hpv34ToolHeroCopy h1) {
+    font-size: 42px;
+  }
+
+  .scope :global(.hpv34ToolHeroActions) {
+    flex-direction: column;
+  }
+
+  .scope :global(.hpv34PrimaryLink),
+  .scope :global(.hpv34SecondaryLink) {
+    width: 100%;
+  }
+}
